@@ -22,12 +22,13 @@ exports.addAdmin = async (req, res) => {
             role: "admin"
         });
         await user.save();
-        // Optionally, create Employee record for admin
+        // Create Employee record for admin
         const emp = new Employee({
             name: req.body.name,
             email: req.body.email,
             password: hashedPassword,
-            role: "admin"
+            role: "admin",
+            status: "approved"
         });
         await emp.save();
         res.json({ message: "Admin added successfully", user });
@@ -48,14 +49,10 @@ exports.createEmployee = async (req, res) => {
             return res.status(400).json({ error: "User with this email already exists" });
         }
 
-        // Hash password for both Employee and User
+        // Hash password
         const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-        // Create Employee
-        const emp = new Employee({ ...req.body, password: hashedPassword });
-        await emp.save();
-
-        // Create User
+        // Create User first
         const user = new User({
             name: req.body.name,
             email: req.body.email,
@@ -64,16 +61,42 @@ exports.createEmployee = async (req, res) => {
         });
         await user.save();
 
+        // Create Employee with status based on role and creator
+        const status = req.user.role === 'admin' ? 'approved' : 'pending';
+        const managerId = req.user.role === 'manager' ? req.user.id : null;
+
+        const emp = new Employee({
+            ...req.body,
+            password: hashedPassword,
+            status,
+            managerId,
+        });
+        await emp.save();
+
         res.json(emp);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
 
-// Get All
+// Get All - role-based filtering
 exports.getEmployees = async (req, res) => {
     try {
-        const employees = await Employee.find();
+        const { role } = req.user;
+        let query = {};
+
+        if (role === 'manager') {
+            // Managers see their team (approved) + their pending
+            query = { 
+                $or: [
+                    { managerId: req.user.id, status: 'pending' },
+                    { managerId: req.user.id, status: 'approved' }
+                ]
+            };
+        }
+        // Admin sees all
+
+        const employees = await Employee.find(query).populate('managerId', 'name');
         res.json(employees);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -83,6 +106,14 @@ exports.getEmployees = async (req, res) => {
 // Update
 exports.updateEmployee = async (req, res) => {
     try {
+        const employee = await Employee.findById(req.params.id);
+        if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+        // Managers can only update their own team
+        if (req.user.role === 'manager' && employee.managerId.toString() !== req.user.id) {
+            return res.status(403).json({ error: 'Not authorized' });
+        }
+
         const updated = await Employee.findByIdAndUpdate(
             req.params.id,
             req.body,
@@ -93,6 +124,22 @@ exports.updateEmployee = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+// Approve Employee (admin only)
+exports.approveEmployee = async (req, res) => {
+    try {
+        const employee = await Employee.findById(req.params.id);
+        if (!employee) return res.status(404).json({ error: 'Employee not found' });
+        
+        employee.status = 'approved';
+        await employee.save();
+        
+        res.json({ message: 'Employee approved', employee });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
 
 // Delete
 exports.deleteEmployee = async (req, res) => {

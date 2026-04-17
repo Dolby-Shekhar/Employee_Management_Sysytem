@@ -2,17 +2,28 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./components/Login";
 import AdminDashboard from "./components/AdminDashboard";
 import Register from "./components/Register";
-import EmployeeDashboard from "./components/EmployeeDashboard";
+import EmployeePortal from "./components/EmployeePortal";
+import ManagerDashboard from "./components/ManagerDashboard";
+import Sidebar from "./components/Sidebar";
+import Header from "./components/Header";
 import { useContext } from "react";
 import { AuthContext } from "./context/AuthContext";
 import { Box, Typography, Paper, ThemeProvider, CssBaseline } from "@mui/material";
 import theme from "./theme";
 
-function PrivateRoute({ children, role }) {
+function PrivateRoute({ children, roles }) {
   const { user } = useContext(AuthContext);
   if (!user) return <Navigate to="/" />;
-  if (role && user.role !== role) return <Navigate to="/" />;
-  return children;
+  if (roles && !roles.includes(user.role)) return <Navigate to="/" />;
+  return (
+    <Box sx={{ display: 'flex' }}>
+      <Sidebar />
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 4 } }}>
+        <Header toggleDrawer={() => {}} />
+        {children}
+      </Box>
+    </Box>
+  );
 }
 
 function App() {
@@ -20,12 +31,11 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box
+      <Box className="container"
         sx={{
           minHeight: '100vh',
           width: '100vw',
-          background: `linear-gradient(135deg, #e3eafc 0%, #f4f6fb 60%, #fff 100%)`,
-          backgroundImage: `repeating-linear-gradient(135deg, rgba(0,87,184,0.03) 0px, rgba(0,87,184,0.03) 2px, transparent 2px, transparent 24px), repeating-linear-gradient(45deg, rgba(255,179,0,0.03) 0px, rgba(255,179,0,0.03) 2px, transparent 2px, transparent 24px)`
+          bgcolor: 'grey.50',
         }}
       >
         <BrowserRouter>
@@ -34,7 +44,7 @@ function App() {
             <Route
               path="/dashboard"
               element={
-                <PrivateRoute role="admin">
+                <PrivateRoute roles={["admin"]}>
                   <AdminDashboard />
                 </PrivateRoute>
               }
@@ -42,8 +52,16 @@ function App() {
             <Route
               path="/employee-dashboard"
               element={
-                <PrivateRoute role="employee">
-                  <EmployeeDashboard />
+                <PrivateRoute roles={["employee"]}>
+                  <EmployeePortal />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/manager-dashboard"
+              element={
+                <PrivateRoute roles={["manager"]}>
+                  <ManagerDashboard />
                 </PrivateRoute>
               }
             />

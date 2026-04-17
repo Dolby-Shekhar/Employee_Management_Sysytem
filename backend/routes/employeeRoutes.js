@@ -6,10 +6,11 @@ const auth = require("../middleware/authMiddleware");
 const admin = require("../middleware/adminMiddleware");
 
 // Routes
-router.get("/", auth, admin, controller.getEmployees);
-router.post("/", auth, admin, controller.createEmployee);
-router.post("/add-admin", auth, admin, controller.addAdmin); // Only admin can add admin, max 2
-router.put("/:id", auth, admin, controller.updateEmployee);
+router.get("/", auth, controller.getEmployees);
+router.post("/", auth, controller.createEmployee);
+router.post("/add-admin", auth, admin, controller.addAdmin);
+router.put("/:id", auth, controller.updateEmployee);
 router.delete("/:id", auth, admin, controller.deleteEmployee);
+router.put("/:id/approve", auth, admin, controller.approveEmployee);
 
 module.exports = router;

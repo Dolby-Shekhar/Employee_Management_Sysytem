@@ -7,6 +7,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import EditEmployee from "./EditEmployee";
+import api from "../utils/axiosInstance";
 import { Box, Button, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton, CircularProgress, Divider, TextField, Stack, Alert } from "@mui/material";
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -22,6 +23,9 @@ const AdminDashboard = () => {
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState("");
   const [adminSuccess, setAdminSuccess] = useState("");
+  const [pendingEmployees, setPendingEmployees] = useState([]);
+  const [pendingOpen, setPendingOpen] = useState(false);
+  const [pendingLoading, setPendingLoading] = useState(false);
     const handleAdminChange = (e) => {
       setAdminForm({ ...adminForm, [e.target.name]: e.target.value });
     };
@@ -54,18 +58,16 @@ const AdminDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const [empRes, attRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/employees", {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get("http://localhost:5000/api/attendance/all", {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+      const [empRes, attRes, pendingRes] = await Promise.all([
+        api.get("/employees"),
+        api.get("/attendance/all"),
+        api.get("/employees")
       ]);
-      setEmployees(empRes.data);
+      setEmployees(empRes.data.filter(e => e.status === 'approved'));
+      setPendingEmployees(pendingRes.data.filter(e => e.status === 'pending'));
       setAttendance(attRes.data);
     } catch (err) {
+      console.error('Dashboard error:', err);
       alert("Error loading data");
     }
     setLoading(false);
@@ -102,7 +104,7 @@ const AdminDashboard = () => {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5', py: 4 }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'transparent', py: 4 }}>
       <Paper elevation={3} sx={{ maxWidth: 900, mx: 'auto', p: 4 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h4">Admin Dashboard</Typography>
@@ -110,16 +112,19 @@ const AdminDashboard = () => {
         </Box>
         <Divider sx={{ mb: 2 }} />
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2, mb: 2 }}>
-          <Typography variant="h6">Employees ({employees.length})</Typography>
-          <Box>
-            <Button variant="contained" color="primary" onClick={() => setAddOpen(true)} sx={{ mr: 2 }}>
-              Add Employee
-            </Button>
-            <Button variant="contained" color="secondary" onClick={() => setAddAdminOpen(true)}>
-              Add Admin
-            </Button>
-          </Box>
+        <Typography variant="h6">Employees ({employees.length}) | Pending ({pendingEmployees.length})</Typography>
+        <Box>
+          <Button variant="contained" color="primary" onClick={() => setAddOpen(true)} sx={{ mr: 2 }}>
+            Add Employee
+          </Button>
+          <Button variant="contained" color="warning" onClick={() => setPendingOpen(true)} sx={{ mr: 2 }}>
+            Review Pending
+          </Button>
+          <Button variant="contained" color="secondary" onClick={() => setAddAdminOpen(true)}>
+            Add Admin
+          </Button>
         </Box>
+      </Box>
         <Dialog open={addAdminOpen} onClose={() => setAddAdminOpen(false)} maxWidth="xs" fullWidth>
           <DialogTitle>Add Admin (max 2)</DialogTitle>
           <DialogContent>
@@ -143,6 +148,62 @@ const AdminDashboard = () => {
             <AddEmployee onAdded={() => { setAddOpen(false); fetchData(); }} />
           </DialogContent>
         </Dialog>
+        <Dialog open={pendingOpen} onClose={() => setPendingOpen(false)} maxWidth="md" fullWidth>
+          <DialogTitle>Pending Employee Approvals ({pendingEmployees.length})</DialogTitle>
+          <DialogContent dividers>
+            <Typography sx={{ mb: 2 }}>Review and approve new team members added by managers.</Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Role</TableCell>
+                    <TableCell>Department</TableCell>
+                    <TableCell>Position</TableCell>
+                    <TableCell>Added By</TableCell>
+                    <TableCell align="center">Action</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {pendingEmployees.map(emp => (
+                    <TableRow key={emp._id}>
+                      <TableCell>{emp.name}</TableCell>
+                      <TableCell>{emp.email}</TableCell>
+                      <TableCell>{emp.role}</TableCell>
+                      <TableCell>{emp.department || '-'}</TableCell>
+                      <TableCell>{emp.position || '-'}</TableCell>
+                      <TableCell>{emp.managerId?.name || 'Direct'}</TableCell>
+                      <TableCell align="center">
+                        <Button 
+                          variant="contained" 
+                          color="success" 
+                          size="small"
+                          onClick={async () => {
+                            try {
+                              await api.put(`/employees/${emp._id}/approve`);
+                              fetchData();
+                              setPendingOpen(false);
+                            } catch (err) {
+                              alert('Approval failed');
+                            }
+                          }}
+                        >
+                          Approve
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            {pendingEmployees.length === 0 && (
+              <Typography align="center" sx={{ mt: 4, color: 'text.secondary' }}>
+                No pending approvals
+              </Typography>
+            )}
+          </DialogContent>
+        </Dialog>
         {/* Employee Table */}
         <TableContainer component={Paper} sx={{ mb: 4 }}>
           <Table>
@@ -150,9 +211,10 @@ const AdminDashboard = () => {
               <TableRow>
                 <TableCell>Name</TableCell>
                 <TableCell>Email</TableCell>
+                <TableCell>Role</TableCell>
+                <TableCell>Status</TableCell>
                 <TableCell>Department</TableCell>
-                <TableCell>Position</TableCell>
-                <TableCell>Salary</TableCell>
+                <TableCell>Manager</TableCell>
                 <TableCell align="center">Actions</TableCell>
               </TableRow>
             </TableHead>

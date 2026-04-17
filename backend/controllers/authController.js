@@ -9,9 +9,9 @@ const registerUser = async (req, res) => {
     const { name, email, password, role } = req.body;
 
     // validate input
-    if (!name || !email || !password) {
+    if (!name || !email || !password || password.length < 8) {
       return res.status(400).json({
-        message: "All fields are required"
+        message: "Password must be at least 8 characters"
       });
     }
 
@@ -93,6 +93,9 @@ const loginUser = async (req, res) => {
     }
 
     const jwt = require("jsonwebtoken");
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET not set in environment");
+    }
     const token = jwt.sign(
       {
         id: user._id,
@@ -100,8 +103,8 @@ const loginUser = async (req, res) => {
         email: user.email,
         role: user.role
       },
-      process.env.JWT_SECRET || "secretkey",
-      { expiresIn: "1d" }
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
     );
 
     return res.json({

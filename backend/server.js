@@ -8,8 +8,23 @@ const app = express();
 // =====================
 // Middleware
 // =====================
-app.use(cors());
-app.use(express.json());
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+app.use(helmet()); // Security headers
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
+app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { message: 'Too many login attempts, try again in 15 mins' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // =====================
 // Routes
@@ -17,6 +32,9 @@ app.use(express.json());
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/employees", require("./routes/employeeRoutes"));
 app.use("/api/attendance", require("./routes/attendanceRoutes"));
+app.use("/api/leaves", require("./routes/leaveRoutes"));
+app.use("/api/payroll", require("./routes/payrollRoutes"));
+app.use("/api/performance", require("./routes/performanceRoutes"));
 
 // =====================
 // Health Check Route (optional but useful)

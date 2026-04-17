@@ -2,29 +2,49 @@ import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
+    mode: 'light',
     primary: {
-      main: '#0057b8', // Vibrant blue
-      contrastText: '#fff',
+      main: '#1e40af',
+      light: '#3b82f6',
+      dark: '#1e3a8a',
+      contrastText: '#ffffff',
     },
     secondary: {
-      main: '#ffb300', // Vibrant gold
-      contrastText: '#fff',
+      main: '#10b981',
+      light: '#34d399',
+      contrastText: '#ffffff',
     },
     background: {
-      default: '#f4f6fb', // Light formal background
-      paper: '#fff',
+      default: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%)',
+      paper: 'rgba(255,255,255,0.95)',
+    },
+    grey: {
+      50: '#f8fafc',
+      100: '#f1f5f9',
+      200: '#e2e8f0',
+      300: '#cbd5e1',
+      400: '#94a3b8',
+      500: '#64748b',
+      600: '#475569',
+      700: '#334155',
+      800: '#1e293b',
+      900: '#0f172a',
     },
     error: {
-      main: '#d32f2f',
+      main: '#ef4444',
     },
     success: {
-      main: '#388e3c',
+      main: '#10b981',
     },
     warning: {
-      main: '#f57c00',
+      main: '#f59e0b',
     },
     info: {
-      main: '#0288d1',
+      main: '#3b82f6',
+    },
+    text: {
+      primary: '#0f172a',
+      secondary: '#475569',
     },
   },
   typography: {

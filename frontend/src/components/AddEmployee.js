@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../utils/axiosInstance";
 import { Button, TextField, Paper, Stack, MenuItem } from "@mui/material";
 
 const AddEmployee = ({ onAdded }) => {
@@ -22,11 +22,7 @@ const AddEmployee = ({ onAdded }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(
-        "http://localhost:5000/api/employees",
-        form,
-        { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-      );
+      await api.post("/employees", form);
       setForm({ name: "", email: "", password: "", department: "", position: "", salary: "", role: "employee" });
       if (onAdded) onAdded();
     } catch (err) {
