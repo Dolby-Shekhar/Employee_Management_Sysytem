@@ -64,8 +64,14 @@ const EmployeeDashboard = () => {
           {todayRecord && todayRecord.earlyLeave && (
             <Typography color="warning.main">Early Leave</Typography>
           )}
-          <Button variant="contained" color="success" onClick={() => handleClock("clock-in")}>Clock In</Button>
-          <Button variant="contained" color="warning" onClick={() => handleClock("clock-out")}>Clock Out</Button>
+          <Button 
+            variant="contained" 
+            color={status === "Clocked in" ? "warning" : "success"} 
+            onClick={() => handleClock(status === "Clocked in" ? "clock-out" : "clock-in")}
+            fullWidth
+          >
+            {status === "Clocked in" ? "Clock Out" : "Clock In"}
+          </Button>
           <Button variant="outlined" color="secondary" onClick={logout}>Logout</Button>
         </Stack>
       </Paper>

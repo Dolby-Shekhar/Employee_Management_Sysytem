@@ -30,9 +30,9 @@ const registerUser = async (req, res) => {
 
 
     // create user
-    let userRole = "employee";
+    let userRole = "member";
     if (role === "admin") userRole = "admin";
-    else if (role === "manager") userRole = "manager";
+    else if (role === "leader") userRole = "leader";
 
     const user = await User.create({
       name,

@@ -1,23 +1,21 @@
-# Fix Manager Login Issue - TODO
+# Fix Edit Profile Tab
 
-## Status: ✅ COMPLETE & SECURED
+## Status: 🔍 Analysis Complete
 
-### Step 1: Create ManagerDashboard.js ✅
-   - Path: frontend/src/components/ManagerDashboard.js
-   - Status: Completed
+**Problem:** EmployeePortal.js Profile tab has placeholder "Edit Profile" button with no functionality.
 
-### Step 2: Update App.js routes ✅
-   - Add Route: /manager-dashboard → ManagerDashboard
-   - Status: Completed
+**Root Cause:** No backend API for profile updates, frontend stub only.
 
-### Step 3: Update Login.js navigation logic ✅
-   - Role-based redirects: admin→/dashboard, manager→/manager-dashboard, employee→/employee-dashboard
-   - Status: Completed
+### Plan
+1. **Backend:** Add /api/profile PUT endpoint (update name, email in User/Employee)
+2. **Frontend:** Replace Profile tab with EditProfile form (name, email, password change)
+3. **Auth:** Update JWT after profile change
+4. **Test:** Restart servers, test profile edit for member/leader
 
-### Step 4: Test ✅
-   - Backend: `cd backend && npm start` (runs server on :5000)
-   - Frontend: New terminal `cd frontend && npm start` (runs on :3000)
-   - 1. Login as admin, add manager employee (select role=manager in AddEmployee)
-   - 2. Logout, login as manager → should go to ManagerDashboard
-   - 3. Verify team view/attendance works
-   - Status: Instructions provided
+**Files:**
+- NEW: backend/controllers/profileController.js
+- NEW route: backend/routes/profileRoutes.js  
+- EDIT: frontend/src/components/EmployeePortal.js (Profile tab)
+- Sync User & Employee records
+
+Ready to proceed? (Y/N)

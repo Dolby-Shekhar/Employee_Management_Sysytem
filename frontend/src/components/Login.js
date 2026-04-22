@@ -2,7 +2,7 @@ import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import api from "../utils/axiosInstance";
-import { Box, Button, TextField, Typography, Paper, Link } from "@mui/material";
+import { Box, Button, TextField, Typography, Paper } from "@mui/material";
 
 const Login = () => {
   const [data, setData] = useState({ email: "", password: "" });
@@ -29,7 +29,17 @@ const Login = () => {
 
   return (
     <Box className="login-container" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'transparent' }}>
-      <Paper elevation={3} className="login-paper" sx={{ p: 6, minWidth: 380 }}>
+      <Paper 
+        elevation={3} 
+        className="login-paper" 
+        sx={{ 
+          p: 6, 
+          minWidth: 380, 
+          background: 'rgba(255, 255, 255, 0.95) !important',
+          backdropFilter: 'blur(20px) !important',
+          borderRadius: 24
+        }}
+      >
         <Typography variant="h4" className="login-title" align="center" gutterBottom>
           Employee Portal
         </Typography>
@@ -58,12 +68,6 @@ const Login = () => {
           <Button className="login-button" variant="contained" color="primary" onClick={handleLogin} fullWidth size="large">
             Sign In
           </Button>
-          <Typography align="center" sx={{ mt: 1 }}>
-            Need an account?{' '}
-            <Link className="register-link" component="button" onClick={() => navigate('/register')} underline="hover">
-              Register Here
-            </Link>
-          </Typography>
         </Box>
       </Paper>
     </Box>
@@ -71,3 +75,4 @@ const Login = () => {
 };
 
 export default Login;
+

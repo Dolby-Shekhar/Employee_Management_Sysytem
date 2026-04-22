@@ -4,31 +4,34 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#1e40af',
-      light: '#3b82f6',
-      dark: '#1e3a8a',
+      main: '#6366f1',
+      light: '#8b5cf6', 
+      dark: '#4f46e5',
       contrastText: '#ffffff',
     },
     secondary: {
       main: '#10b981',
-      light: '#34d399',
+      light: '#059669',
       contrastText: '#ffffff',
     },
     background: {
-      default: 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%)',
-      paper: 'rgba(255,255,255,0.95)',
+      default: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      paper: 'rgba(255, 255, 255, 0.25)',
+    },
+    surface: {
+      main: 'rgba(255, 255, 255, 0.9)',
     },
     grey: {
-      50: '#f8fafc',
-      100: '#f1f5f9',
-      200: '#e2e8f0',
-      300: '#cbd5e1',
-      400: '#94a3b8',
-      500: '#64748b',
-      600: '#475569',
-      700: '#334155',
-      800: '#1e293b',
-      900: '#0f172a',
+      50: '#fdf2f8',
+      100: '#fce7f3',
+      200: '#fbcfe8',
+      300: '#f9a8d4',
+      400: '#f472b6',
+      500: '#ec4899',
+      600: '#db2777',
+      700: '#be185d',
+      800: '#9d174d',
+      900: '#831843',
     },
     error: {
       main: '#ef4444',
@@ -48,7 +51,8 @@ const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: 'Segoe UI, Roboto, Arial, sans-serif',
+    fontFamily: '"Inter", "Segoe UI", Roboto, sans-serif',
+
     h4: {
       fontWeight: 700,
       letterSpacing: '0.5px',
@@ -72,22 +76,49 @@ const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: 16,
+          borderRadius: 20,
+          boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
+          borderRadius: 12,
           fontWeight: 600,
+          textTransform: 'none',
+          padding: '12px 24px',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
         },
       },
     },
-    MuiTableHead: {
+    MuiTableCell: {
       styleOverrides: {
         root: {
-          background: '#e3eafc',
+          padding: '16px 12px',
+        },
+        head: {
+          background: 'linear-gradient(90deg, #f8fafc 0%, #e2e8f0 100%)',
+          fontWeight: 700,
+          color: '#1e293b',
+          borderBottom: '2px solid #e2e8f0',
+        },
+      },
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          '&:hover': {
+            backgroundColor: 'rgba(59,130,246,0.04)',
+          },
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 16,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
         },
       },
     },

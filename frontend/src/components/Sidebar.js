@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, Avatar, Typography, Box, Paper } from "@mui/material";
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -30,6 +31,7 @@ const SidebarPaper = styled(Paper)(({ theme }) => ({
 
 const Sidebar = ({ mobileOpen, onDrawerToggle }) => {
   const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   const drawer = (
     <SidebarPaper elevation={24}>
@@ -57,7 +59,7 @@ const Sidebar = ({ mobileOpen, onDrawerToggle }) => {
       <Divider sx={{ mx: 2, my: 1, borderColor: 'rgba(255,255,255,0.2)' }} />
       
       <List>
-        <ListItem button onClick={() => window.location.href = '/dashboard'}>
+        <ListItem button onClick={() => navigate('/dashboard')}>
           <ListItemIcon sx={{ color: 'white', minWidth: 48 }}>
             <DashboardIcon />
           </ListItemIcon>
@@ -66,34 +68,28 @@ const Sidebar = ({ mobileOpen, onDrawerToggle }) => {
         
         <Divider sx={{ mx: 2, my: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />
         
-        <ListItem button onClick={() => window.location.href = '/employee-dashboard'}>
+        <ListItem button onClick={() => navigate('/employee-dashboard')}>
           <ListItemIcon sx={{ color: 'white', minWidth: 48 }}>
             <AttendanceIcon />
           </ListItemIcon>
           <ListItemText primary="Attendance" />
         </ListItem>
         
-        <ListItem button>
+        <ListItem button onClick={() => navigate('/dashboard')}>
           <ListItemIcon sx={{ color: 'white', minWidth: 48 }}>
-            <PeopleIcon />
+            <DashboardIcon />
           </ListItemIcon>
-          <ListItemText primary="Team" />
+          <ListItemText primary="Dashboard" />
         </ListItem>
         
-        <ListItem button>
+        <ListItem button onClick={() => navigate('/employee-dashboard')}>
           <ListItemIcon sx={{ color: 'white', minWidth: 48 }}>
-            <LeaveIcon />
+            <AttendanceIcon />
           </ListItemIcon>
-          <ListItemText primary="Leaves" />
-        </ListItem>
-        
-        <ListItem button>
-          <ListItemIcon sx={{ color: 'white', minWidth: 48 }}>
-            <PayrollIcon />
-          </ListItemIcon>
-          <ListItemText primary="Payroll" />
+          <ListItemText primary="Attendance" />
         </ListItem>
       </List>
+
       
       <Divider sx={{ mx: 2, mt: 'auto', borderColor: 'rgba(255,255,255,0.2)' }} />
       
@@ -117,7 +113,9 @@ const Sidebar = ({ mobileOpen, onDrawerToggle }) => {
         variant="temporary"
         open={mobileOpen}
         onClose={onDrawerToggle}
-        ModalProps={{ keepMounted: true }}
+        ModalProps={{
+          keepMounted: true
+        }}
         sx={{
           display: { xs: 'block', md: 'none' },
           '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 280 },

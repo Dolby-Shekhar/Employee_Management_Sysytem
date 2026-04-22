@@ -61,3 +61,16 @@ exports.getAllAttendance = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// Get My Attendance
+exports.getMyAttendance = async (req, res) => {
+  try {
+    const records = await Attendance.find({ user: req.user.id })
+      .sort({ date: -1 })
+      .populate('user', 'name');
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+

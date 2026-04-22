@@ -2,9 +2,11 @@ import React, { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../context/AuthContext";
 import api from "../utils/axiosInstance";
 import Payroll from "./Payroll";
-import { Box, Paper, Typography, Tabs, Tab, Stack, CircularProgress, Card, CardContent, Divider, Button } from "@mui/material";
+import LeaveRequest from "./LeaveRequest";
+import { Box, Paper, Typography, Tabs, Tab, Stack, CircularProgress, Card, CardContent, Divider, Button, TextField } from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
-const AttendanceCard = ({ status, todayRecord, onClockIn, onClockOut, loading }) => (
+const AttendanceCard = ({ status, todayRecord, handleClock, loading }) => (
+
   <Card sx={{ boxShadow: '0 8px 32px rgba(0,0,0,0.12)', borderRadius: 3 }}>
     <CardContent>
       <Typography variant="h6" gutterBottom>Today's Attendance</Typography>
@@ -18,29 +20,21 @@ const AttendanceCard = ({ status, todayRecord, onClockIn, onClockOut, loading })
         <Stack direction="row" spacing={2}>
           <Button 
             variant="contained" 
-            color="success" 
             size="large"
-            onClick={onClockIn}
-            disabled={loading || status === "Clocked in"}
+            onClick={() => handleClock(status === "Clocked in" ? "clock-out" : "clock-in")}
+            disabled={loading || status === "Clocked out"}
             fullWidth
+            color={status === "Clocked in" ? "warning" : "success"}
           >
-            Clock In
-          </Button>
-          <Button 
-            variant="contained" 
-            color="warning" 
-            size="large"
-            onClick={onClockOut}
-            disabled={loading || status === "Not clocked in"}
-            fullWidth
-          >
-            Clock Out
+            {status === "Clocked in" ? "Clock Out" : "Clock In"}
           </Button>
         </Stack>
       </Stack>
     </CardContent>
   </Card>
 );
+
+
 
 const EmployeePortal = () => {
   const { user, logout } = useContext(AuthContext);
@@ -89,8 +83,19 @@ const [activeTab, setActiveTab] = useState("attendance");
     setLoading(false);
   };
 
+  const [leaves, setLeaves] = useState([]);
+  const [leaveLoading, setLeaveLoading] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+
   const fetchLeaves = async () => {
-    // Leaves functionality coming soon
+    setLeaveLoading(true);
+    try {
+      const res = await api.get("/leaves/my-leaves");
+      setLeaves(res.data);
+    } catch (err) {
+      console.error('Fetch leaves error:', err);
+    }
+    setLeaveLoading(false);
   };
 
   const fetchPayroll = async () => {
@@ -99,6 +104,7 @@ const [activeTab, setActiveTab] = useState("attendance");
       setPayroll(res.data);
     } catch {}
   };
+
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'transparent', py: 4, px: 2 }}>
@@ -115,21 +121,20 @@ const [activeTab, setActiveTab] = useState("attendance");
           <Button 
             variant="outlined" 
             startIcon={<EditIcon />}
-            onClick={logout}
             size="large"
             color="secondary"
           >
-            Sign Out
+            Profile Settings
           </Button>
         </Stack>
 
         <AttendanceCard 
           status={status} 
           todayRecord={todayRecord}
-          onClockIn={() => handleClock('clock-in')}
-          onClockOut={() => handleClock('clock-out')}
+          handleClock={handleClock}
           loading={loading}
         />
+
 
         <Divider sx={{ my: 4 }} />
 
@@ -148,19 +153,117 @@ const [activeTab, setActiveTab] = useState("attendance");
         )}
 
         {activeTab === "leaves" && (
-          <div>Leaves - Coming Soon</div>
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="h6">Leave Requests</Typography>
+              <Button variant="contained" onClick={() => setLeaveOpen(true)}>
+                + New Request
+              </Button>
+            </Box>
+            {leaveLoading ? (
+              <CircularProgress />
+            ) : leaves.length === 0 ? (
+              <Paper sx={{ p: 4, textAlign: 'center' }}>
+                <Typography>No leave requests</Typography>
+              </Paper>
+            ) : (
+              <Paper sx={{ p: 3 }}>
+                <Stack spacing={2}>
+                  {leaves.slice(0, 5).map((leave) => (
+                    <Paper key={leave._id} sx={{ p: 3 }}>
+                      <Typography variant="body1"><strong>{leave.type}</strong> | {leave.status.toUpperCase()}</Typography>
+                      <Typography>{new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()} ({leave.days} days)</Typography>
+                      <Typography variant="body2" color="text.secondary">{leave.reason}</Typography>
+                    </Paper>
+                  ))}
+                </Stack>
+              </Paper>
+            )}
+            <LeaveRequest open={leaveOpen} onClose={() => { setLeaveOpen(false); fetchLeaves(); }} />
+          </Box>
         )}
+
 
         {activeTab === "payroll" && (
           <Payroll payrolls={payroll} />
         )}
 
-        {activeTab === "profile" && (
+{activeTab === "profile" && (
           <Box>
             <Typography variant="h6" gutterBottom>Profile Settings</Typography>
             <Paper sx={{ p: 3, mt: 2 }}>
-              <Typography>Edit personal information, password, notifications</Typography>
-              <Button variant="contained" sx={{ mt: 2 }}>Edit Profile</Button>
+              <Stack spacing={3}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Typography variant="body1" fontWeight={500}>Current Profile:</Typography>
+                </Stack>
+                <Stack spacing={2}>
+                  <Typography><strong>Name:</strong> {user?.name}</Typography>
+                  <Typography><strong>Email:</strong> {user?.email}</Typography>
+                  <Typography><strong>Role:</strong> {user?.role}</Typography>
+                </Stack>
+                <Divider />
+                <Typography variant="h6">Update Profile</Typography>
+                <Stack spacing={2}>
+                  <TextField
+                    label="New Name"
+                    name="name"
+                    defaultValue={user?.name}
+                    fullWidth
+                  />
+                  <TextField
+                    label="New Email"
+                    name="email"
+                    type="email"
+                    defaultValue={user?.email}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Current Password"
+                    name="currentPassword"
+                    type="password"
+                    fullWidth
+                  />
+                  <TextField
+                    label="New Password (optional)"
+                    name="newPassword"
+                    type="password"
+                    fullWidth
+                  />
+                  <Button 
+                    variant="contained" 
+                    fullWidth
+                    onClick={async () => {
+                      const formData = new FormData();
+                      const nameInput = document.querySelector('input[name="name"]');
+                      const emailInput = document.querySelector('input[name="email"]');
+                      const currentPwInput = document.querySelector('input[name="currentPassword"]');
+                      const newPwInput = document.querySelector('input[name="newPassword"]');
+                      
+                      if (nameInput.value !== user.name) formData.append('name', nameInput.value);
+                      if (emailInput.value !== user.email) formData.append('email', emailInput.value);
+                      if (currentPwInput.value) formData.append('currentPassword', currentPwInput.value);
+                      if (newPwInput.value) formData.append('newPassword', newPwInput.value);
+                      
+                      if (formData.entries().next().done) {
+                        alert('No changes made');
+                        return;
+                      }
+                      
+                      try {
+                        const res = await api.put('/profile', Object.fromEntries(formData));
+                        alert('Profile updated!');
+                        // Update context
+                        localStorage.setItem('user', JSON.stringify(res.data.user));
+                        window.location.reload();
+                      } catch (err) {
+                        alert(err.response?.data?.message || 'Update failed');
+                      }
+                    }}
+                  >
+                    Update Profile
+                  </Button>
+                </Stack>
+              </Stack>
             </Paper>
           </Box>
         )}

@@ -65,20 +65,6 @@ function App() {
                 </PrivateRoute>
               }
             />
-            <Route
-              path="/register"
-              element={
-                user && user.role === "admin" ? (
-                  <Register />
-                ) : (
-                  <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default' }}>
-                    <Paper elevation={3} sx={{ p: 4, minWidth: 340 }}>
-                      <Typography variant="h6" align="center">Only admins can register new employees.</Typography>
-                    </Paper>
-                  </Box>
-                )
-              }
-            />
           </Routes>
         </BrowserRouter>
       </Box>
@@ -87,3 +73,4 @@ function App() {
 }
 
 export default App;
+

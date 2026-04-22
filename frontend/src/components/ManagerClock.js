@@ -64,28 +64,16 @@ const ManagerClock = () => {
         {loading ? (
           <CircularProgress />
         ) : (
-          <>
-            <Button 
-              variant="contained" 
-              color="success" 
-              onClick={() => handleClock("clock-in")}
-              disabled={status === "Clocked In" || status === "Clocked Out"}
-              fullWidth
-              size="large"
-            >
-              Clock In
-            </Button>
-            <Button 
-              variant="contained" 
-              color="warning" 
-              onClick={() => handleClock("clock-out")}
-              disabled={status !== "Clocked In"}
-              fullWidth
-              size="large"
-            >
-              Clock Out
-            </Button>
-          </>
+          <Button 
+            variant="contained" 
+            color={status === "Clocked In" ? "warning" : "success"} 
+            onClick={() => handleClock(status === "Clocked In" ? "clock-out" : "clock-in")}
+            disabled={status === "Clocked Out"}
+            fullWidth
+            size="large"
+          >
+            {status === "Clocked In" ? "Clock Out" : "Clock In"}
+          </Button>
         )}
       </Stack>
     </Paper>

@@ -23,6 +23,8 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
       window.location.href = '/';
     }
     return Promise.reject(error);

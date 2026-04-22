@@ -9,5 +9,6 @@ router.post("/clock-out", auth, attendanceController.clockOut);
 
 // Admin route
 router.get("/all", auth, attendanceController.getAllAttendance);
+router.get("/my", auth, attendanceController.getMyAttendance);
 
 module.exports = router;

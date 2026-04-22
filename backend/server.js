@@ -35,6 +35,7 @@ app.use("/api/attendance", require("./routes/attendanceRoutes"));
 app.use("/api/leaves", require("./routes/leaveRoutes"));
 app.use("/api/payroll", require("./routes/payrollRoutes"));
 app.use("/api/performance", require("./routes/performanceRoutes"));
+app.use("/api/profile", require("./routes/profileRoutes"));
 
 // =====================
 // Health Check Route (optional but useful)

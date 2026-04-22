@@ -4,16 +4,26 @@ const Employee = require("../models/Employee");
 // Create Leave Request
 exports.createLeave = async (req, res) => {
   try {
+    const employee = await Employee.findById(req.user.id).populate('managerId', 'name email');
+    if (!employee.managerId) {
+      return res.status(400).json({ error: "No assigned manager found" });
+    }
+    
     const leave = new Leave({
       ...req.body,
-      employeeId: req.user.id
+      employeeId: req.user.id,
+      managerId: employee.managerId._id
     });
     await leave.save();
-    res.status(201).json({ message: "Leave request submitted", leave });
+    
+    // Notify manager (future)
+    
+    res.status(201).json({ message: "Leave request submitted to your manager", leave });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // Get Employee's Leaves
 exports.getMyLeaves = async (req, res) => {

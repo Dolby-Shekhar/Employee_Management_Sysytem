@@ -53,8 +53,8 @@ const AddEmployee = ({ onAdded }) => {
             fullWidth
             sx={{ minWidth: 120 }}
           >
-            <MenuItem value="employee">Employee</MenuItem>
-            <MenuItem value="manager">Manager</MenuItem>
+            <MenuItem value="member">Member</MenuItem>
+            <MenuItem value="leader">Leader</MenuItem>
           </TextField>
         </Stack>
         <Button type="submit" variant="contained" color="primary" disabled={loading} sx={{ mt: 2 }}>

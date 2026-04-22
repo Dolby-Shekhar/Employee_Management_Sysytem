@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import { AuthContext } from "../context/AuthContext";
 import { AppBar, Toolbar, Typography, IconButton, Badge, Menu, MenuItem, Divider, Box } from '@mui/material';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -15,6 +16,7 @@ const StyledAppBar = styled(AppBar)({
 });
 
 const Header = ({ toggleDrawer }) => {
+  const { logout } = useContext(AuthContext);
   const [anchorEl, setAnchorEl] = React.useState(null);
 
   const handleMenu = (event) => {
@@ -82,7 +84,7 @@ const Header = ({ toggleDrawer }) => {
           <MenuItem>Profile</MenuItem>
           <MenuItem>Settings</MenuItem>
           <Divider />
-          <MenuItem onClick={handleClose}>Logout</MenuItem>
+<MenuItem onClick={() => { handleClose(); logout(); }}>Logout</MenuItem>
         </Menu>
       </Toolbar>
     </StyledAppBar>

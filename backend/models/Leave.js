@@ -23,11 +23,16 @@ const leaveSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  reason: String,
+  reason: { type: String, required: true },
   status: {
     type: String,
     enum: ["pending", "approved", "rejected"],
     default: "pending"
+  },
+  managerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Employee",
+    required: true
   },
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,

@@ -12,8 +12,7 @@ const loginLimiter = require('express-rate-limit')({
   legacyHeaders: false,
 });
 
-// Only admin can register new employees
-router.post("/register", auth, admin, registerUser);
 router.post("/login", loginLimiter, loginUser);
 
 module.exports = router;
+
