@@ -30,9 +30,9 @@ const registerUser = async (req, res) => {
 
 
     // create user
-    let userRole = "member";
+    let userRole = "employee";
     if (role === "admin") userRole = "admin";
-    else if (role === "leader") userRole = "leader";
+    else if (role === "manager") userRole = "manager";
 
     const user = await User.create({
       name,
@@ -94,7 +94,8 @@ const loginUser = async (req, res) => {
 
     const jwt = require("jsonwebtoken");
     if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET not set in environment");
+      console.error("❌ JWT_SECRET missing in env");
+      return res.status(500).json({ message: "Server configuration error - contact admin" });
     }
     const token = jwt.sign(
       {
