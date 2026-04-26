@@ -43,45 +43,41 @@
 - [x] Fix Register
 
 ## Phase 5: Admin Dashboard (Tab-Based) ✅
-- [x] Create AdminDashboard with tabs
-- [x] Create EmployeeManagement
-- [x] Create AttendanceOverview
-- [x] Create PayrollOverview
+- [x] Create AdminDashboard with tabs (Overview, Employees, Pending Approvals, Attendance, Leaves, Payroll, Settings)
 
 ## Phase 6: Manager Dashboard (Tab-Based) ✅
-- [x] Create ManagerDashboard with tabs
-- [x] Create TeamManagement
-- [x] Create LeaveApprovals
+- [x] Create ManagerDashboard with tabs (Overview, My Team, Attendance, Leave Approvals, Performance)
+- [x] Add "Add Employee" tab with pending approval
 
 ## Phase 7: Employee Portal (Tab-Based) ✅
-- [x] Create EmployeePortal with tabs
-- [x] Create AttendanceHistory
-- [x] Create LeaveRequest
-- [x] Create MyPayroll
-- [x] Create MyProfile
+- [x] Create EmployeePortal with tabs (Overview, Attendance, Leaves, Payroll, Performance, Profile)
 
 ## Phase 8: Common Components ✅
 - [x] Create LoadingScreen
 - [x] Create ConfirmDialog
 - [x] Create ErrorBoundary
+- [x] Create ToastContainer
+- [x] Create DataTable
 
 ## Phase 9: App.js & Final Integration ✅
 - [x] Fix App.js with proper routing
 - [x] Add ToastContainer
 - [x] Add ErrorBoundary
+- [x] Add NotFound 404 page
+- [x] Add NavigationSetter for soft navigation
 
 ## Phase 10: Testing & Cleanup ✅
 - [x] Remove old redundant files
 - [x] Remove conflicting root package.json
 - [x] Create .env.example
-- [x] Update README
-- [x] Test all flows
+- [x] Update README with Render deployment guide
+- [x] Verify API routes match between frontend/backend
+- [x] Commit and push all changes
+- [x] Push to GitHub (branch: blackboxai/local-updates)
 
-## Phase 11: Final TODO Completion ✅
-- [x] Create NotFound.js page
-- [x] Refactor AdminDashboard.js to tab-based layout
-- [x] Update App.js with NotFound route
-- [x] Update axiosInstance.js with soft 401 navigation
-- [x] Delete unused AddEmployee.js and EditEmployee.js
-- [x] Update TODO trackers
+## Deployment Checklist
+- [ ] Create MongoDB Atlas cluster
+- [ ] Set up Render Web Service
+- [ ] Configure environment variables on Render
+- [ ] Deploy and test all flows
 
