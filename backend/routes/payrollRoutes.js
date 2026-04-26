@@ -18,9 +18,9 @@ router.get('/my', getMyPayroll);
 
 // Admin routes
 router.get('/', adminMiddleware, getAllPayrolls);
+router.get('/all', adminMiddleware, getAllPayrolls);
 router.post('/generate', adminMiddleware, generatePayroll);
 router.put('/:id/pay', adminMiddleware, markAsPaid);
 router.delete('/:id', adminMiddleware, deletePayroll);
 
 module.exports = router;
-
