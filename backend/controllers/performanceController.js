@@ -1,119 +1,200 @@
-const PerformanceReview = require("../models/PerformanceReview");
-const Employee = require("../models/Employee");
+const PerformanceReview = require('../models/PerformanceReview');
+const Employee = require('../models/Employee');
 
-// Create/Update Self Review (Employee)
-exports.createSelfReview = async (req, res) => {
+// @desc    Create performance review
+// @route   POST /api/performance
+// @access  Private (Manager/Admin)
+const createReview = async (req, res) => {
   try {
-    const { period, scores, comments, goals } = req.body;
-    const averageScore = (scores.productivity + scores.teamwork + scores.quality + scores.initiative) / 4;
+    const { employeeId, quarter, year, scores, comments, goals } = req.body;
 
-    let review = await PerformanceReview.findOne({
-      employeeId: req.user.id,
-      reviewerId: req.user.id,
-      "period.quarter": period.quarter,
-      "period.year": period.year
-    });
-
-    if (review) {
-      // Update existing
-      review.scores = scores;
-      review.averageScore = averageScore;
-      review.comments = comments;
-      review.goals = goals;
-      review.status = "submitted";
-      review.submittedAt = new Date();
-    } else {
-      // Create new
-      review = new PerformanceReview({
-        employeeId: req.user.id,
-        reviewerId: req.user.id,
-        period,
-        scores,
-        averageScore,
-        comments,
-        goals,
-        status: "submitted"
-      });
+    // Validation
+    if (!employeeId || !quarter || !year || !scores) {
+      return res.status(400).json({ message: 'Please provide employeeId, quarter, year, and scores' });
     }
 
-    await review.save();
-    await review.populate("employeeId reviewerId", "name role");
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
 
-    res.json({ message: "Self-review saved", review });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+    // Authorization check for managers
+    if (req.user.role === 'manager' && employee.managerId?.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to review this employee' });
+    }
 
-// Get My Reviews (as employee)
-exports.getMyReviews = async (req, res) => {
-  try {
-    const reviews = await PerformanceReview.find({ 
-      $or: [
-        { employeeId: req.user.id },
-        { reviewerId: req.user.id }
-      ]
-    }).populate("employeeId reviewerId", "name email role")
-      .sort({ "period.year": -1, "period.quarter": -1 });
-    
-    res.json(reviews);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+    // Check for existing review
+    const existing = await PerformanceReview.findOne({
+      employeeId,
+      'period.quarter': quarter,
+      'period.year': year
+    });
 
-// Submit Manager Review
-exports.submitManagerReview = async (req, res) => {
-  try {
-    const { employeeId, period, scores, comments } = req.body;
-    const averageScore = (scores.productivity + scores.teamwork + scores.quality + scores.initiative) / 4;
+    if (existing) {
+      return res.status(400).json({ message: 'Performance review already exists for this period' });
+    }
 
-    const review = await PerformanceReview.findOne({
+    // Calculate average score
+    const { productivity, teamwork, quality, initiative } = scores;
+    const averageScore = ((productivity || 0) + (teamwork || 0) + (quality || 0) + (initiative || 0)) / 4;
+
+    const review = await PerformanceReview.create({
       employeeId,
       reviewerId: req.user.id,
-      "period.quarter": period.quarter,
-      "period.year": period.year
+      period: { quarter, year },
+      scores: {
+        productivity: productivity || 0,
+        teamwork: teamwork || 0,
+        quality: quality || 0,
+        initiative: initiative || 0
+      },
+      averageScore,
+      comments: comments || '',
+      goals: goals || '',
+      status: 'submitted',
+      submittedAt: new Date()
     });
 
-    if (!review) {
-      return res.status(404).json({ error: "Review not found" });
-    }
+    await review.populate('employeeId reviewerId', 'name email');
 
-    review.scores = scores;
-    review.averageScore = averageScore;
-    review.comments = comments;
-    review.status = "finalized";
-    review.reviewedAt = new Date();
+    res.status(201).json({
+      success: true,
+      message: 'Performance review created successfully',
+      data: review
+    });
 
-    await review.save();
-    await review.populate("employeeId reviewerId", "name role");
-
-    res.json({ message: "Review submitted", review });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Get Team Reviews for Manager
-exports.getTeamReviews = async (req, res) => {
+// @desc    Get all performance reviews
+// @route   GET /api/performance
+// @access  Private (Admin)
+const getAllReviews = async (req, res) => {
   try {
-    const employees = await Employee.find({ managerId: req.user.id, status: 'approved' });
-    const employeeIds = employees.map(e => e._id);
+    const reviews = await PerformanceReview.find()
+      .populate('employeeId', 'name email department')
+      .populate('reviewerId', 'name')
+      .sort({ createdAt: -1 });
 
-    const reviews = await PerformanceReview.find({ 
-      employeeId: { $in: employeeIds } 
-    }).populate("employeeId reviewerId", "name email role")
-      .sort({ "period.year": -1, "period.quarter": -1 });
+    res.json({ success: true, count: reviews.length, data: reviews });
 
-    res.json(reviews);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Get my performance reviews
+// @route   GET /api/performance/my
+// @access  Private
+const getMyReviews = async (req, res) => {
+  try {
+    const reviews = await PerformanceReview.find({ employeeId: req.user.id })
+      .populate('reviewerId', 'name')
+      .sort({ 'period.year': -1, 'period.quarter': -1 });
+
+    res.json({ success: true, count: reviews.length, data: reviews });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Get team performance reviews (manager)
+// @route   GET /api/performance/team
+// @access  Private (Manager)
+const getTeamReviews = async (req, res) => {
+  try {
+    const teamMembers = await Employee.find({ managerId: req.user.id });
+    const teamIds = teamMembers.map(e => e._id);
+
+    const reviews = await PerformanceReview.find({ employeeId: { $in: teamIds } })
+      .populate('employeeId', 'name email')
+      .populate('reviewerId', 'name')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, count: reviews.length, data: reviews });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Update performance review
+// @route   PUT /api/performance/:id
+// @access  Private (Manager/Admin)
+const updateReview = async (req, res) => {
+  try {
+    const review = await PerformanceReview.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Only reviewer or admin can update
+    if (req.user.role !== 'admin' && review.reviewerId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to update this review' });
+    }
+
+    const { scores, comments, goals, status } = req.body;
+
+    if (scores) {
+      const { productivity, teamwork, quality, initiative } = scores;
+      review.scores = {
+        productivity: productivity ?? review.scores.productivity,
+        teamwork: teamwork ?? review.scores.teamwork,
+        quality: quality ?? review.scores.quality,
+        initiative: initiative ?? review.scores.initiative
+      };
+      review.averageScore = (
+        review.scores.productivity +
+        review.scores.teamwork +
+        review.scores.quality +
+        review.scores.initiative
+      ) / 4;
+    }
+
+    if (comments !== undefined) review.comments = comments;
+    if (goals !== undefined) review.goals = goals;
+    if (status) {
+      review.status = status;
+      if (status === 'reviewed') review.reviewedAt = new Date();
+    }
+
+    await review.save();
+    await review.populate('employeeId reviewerId', 'name email');
+
+    res.json({ success: true, message: 'Review updated successfully', data: review });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Delete performance review
+// @route   DELETE /api/performance/:id
+// @access  Private (Admin)
+const deleteReview = async (req, res) => {
+  try {
+    const review = await PerformanceReview.findById(req.params.id);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    await PerformanceReview.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Review deleted successfully' });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
 module.exports = {
-  createSelfReview: exports.createSelfReview,
-  getMyReviews: exports.getMyReviews,
-  submitManagerReview: exports.submitManagerReview,
-  getTeamReviews: exports.getTeamReviews
+  createReview,
+  getAllReviews,
+  getMyReviews,
+  getTeamReviews,
+  updateReview,
+  deleteReview
 };
+

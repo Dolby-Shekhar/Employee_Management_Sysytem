@@ -1,21 +1,26 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const auth = require("../middleware/authMiddleware");
-const { 
-  generatePayroll, 
-  getMyPayroll, 
-  getTeamPayroll, 
-  markPaid 
-} = require("../controllers/payrollController");
+const {
+  generatePayroll,
+  getAllPayrolls,
+  getMyPayroll,
+  markAsPaid,
+  deletePayroll
+} = require('../controllers/payrollController');
+const authMiddleware = require('../middleware/authMiddleware');
+const adminMiddleware = require('../middleware/adminMiddleware');
 
-// Employee routes
-router.post("/:month/:year", auth, generatePayroll);
-router.get("/my-payroll", auth, getMyPayroll);
+// All routes are protected
+router.use(authMiddleware);
 
-// Manager/Admin team payroll
-router.get("/team", auth, getTeamPayroll);
+// Employee route
+router.get('/my', getMyPayroll);
 
-// Mark as paid (admin/manager)
-router.patch("/:id/paid", auth, markPaid);
+// Admin routes
+router.get('/', adminMiddleware, getAllPayrolls);
+router.post('/generate', adminMiddleware, generatePayroll);
+router.put('/:id/pay', adminMiddleware, markAsPaid);
+router.delete('/:id', adminMiddleware, deletePayroll);
 
 module.exports = router;
+

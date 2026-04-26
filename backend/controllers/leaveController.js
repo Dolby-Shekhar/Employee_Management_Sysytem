@@ -1,119 +1,205 @@
-const Leave = require("../models/Leave");
-const Employee = require("../models/Employee");
+const Leave = require('../models/Leave');
+const Employee = require('../models/Employee');
 
-// Create Leave Request
-exports.createLeave = async (req, res) => {
+// @desc    Create leave request
+// @route   POST /api/leaves
+// @access  Private
+const createLeave = async (req, res) => {
   try {
-    const employee = await Employee.findById(req.user.id).populate('managerId', 'name email');
-    if (!employee.managerId) {
-      return res.status(400).json({ error: "No assigned manager found" });
+    const { type, startDate, endDate, reason, days } = req.body;
+
+    // Validation
+    if (!type || !startDate || !endDate || !reason || !days) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
     }
-    
-    const leave = new Leave({
-      ...req.body,
+
+    const employee = await Employee.findById(req.user.id);
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Find manager
+    let managerId = employee.managerId;
+    if (!managerId) {
+      // If no manager assigned, find any manager or admin
+      const manager = await Employee.findOne({ role: 'manager' });
+      if (manager) managerId = manager._id;
+    }
+
+    const leave = await Leave.create({
       employeeId: req.user.id,
-      managerId: employee.managerId._id
+      type,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      days: parseInt(days),
+      reason,
+      managerId: managerId || null
     });
-    await leave.save();
-    
-    // Notify manager (future)
-    
-    res.status(201).json({ message: "Leave request submitted to your manager", leave });
+
+    await leave.populate('employeeId', 'name email');
+
+    res.status(201).json({
+      success: true,
+      message: 'Leave request submitted successfully',
+      data: leave
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
-
-// Get Employee's Leaves
-exports.getMyLeaves = async (req, res) => {
+// @desc    Get my leaves
+// @route   GET /api/leaves/my-leaves
+// @access  Private
+const getMyLeaves = async (req, res) => {
   try {
     const leaves = await Leave.find({ employeeId: req.user.id })
       .populate('approvedBy', 'name')
       .sort({ createdAt: -1 });
-    res.json(leaves);
+
+    res.json({ success: true, count: leaves.length, data: leaves });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Get Leaves for Approval (manager/admin)
-exports.getLeavesForApproval = async (req, res) => {
+// @desc    Get leaves for approval
+// @route   GET /api/leaves/pending
+// @access  Private (Manager/Admin)
+const getLeavesForApproval = async (req, res) => {
   try {
     let query = { status: 'pending' };
+
     if (req.user.role === 'manager') {
-      // Managers approve their team
-      query.employeeId = { $in: (await Employee.find({ managerId: req.user.id, status: 'approved' })).map(e => e._id) };
+      // Get manager's team members
+      const teamMembers = await Employee.find({ managerId: req.user.id });
+      const teamIds = teamMembers.map(e => e._id.toString());
+      query.employeeId = { $in: teamIds };
     }
+
     const leaves = await Leave.find(query)
-      .populate('employeeId', 'name email role')
-      .populate('approvedBy', 'name');
-    res.json(leaves);
+      .populate('employeeId', 'name email department')
+      .populate('approvedBy', 'name')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, count: leaves.length, data: leaves });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Approve/Reject Leave
-exports.updateLeaveStatus = async (req, res) => {
+// @desc    Get all leaves (admin)
+// @route   GET /api/leaves/all
+// @access  Private (Admin)
+const getAllLeaves = async (req, res) => {
   try {
-    const leave = await Leave.findById(req.params.id).populate('employeeId', 'name email');
-    if (!leave) return res.status(404).json({ error: 'Leave not found' });
+    const leaves = await Leave.find()
+      .populate('employeeId', 'name email department')
+      .populate('approvedBy', 'name')
+      .sort({ createdAt: -1 });
 
-    leave.status = req.body.status;
+    res.json({ success: true, count: leaves.length, data: leaves });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Update leave status
+// @route   PUT /api/leaves/:id/status
+// @access  Private (Manager/Admin)
+const updateLeaveStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (!status || !['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Please provide valid status (approved/rejected)' });
+    }
+
+    const leave = await Leave.findById(req.params.id);
+    if (!leave) {
+      return res.status(404).json({ message: 'Leave request not found' });
+    }
+
+    // Authorization check
+    if (req.user.role === 'manager') {
+      const teamMembers = await Employee.find({ managerId: req.user.id });
+      const teamIds = teamMembers.map(e => e._id.toString());
+      if (!teamIds.includes(leave.employeeId.toString())) {
+        return res.status(403).json({ message: 'Not authorized to manage this leave' });
+      }
+    }
+
+    leave.status = status;
     leave.approvedBy = req.user.id;
     leave.approvedAt = new Date();
     await leave.save();
 
-    res.json({ message: `Leave ${req.body.status}`, leave });
+    await leave.populate('employeeId approvedBy', 'name email');
+
+    res.json({
+      success: true,
+      message: `Leave ${status} successfully`,
+      data: leave
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Get Leave Summary for Dashboard
-exports.getLeaveSummary = async (req, res) => {
+// @desc    Get leave summary
+// @route   GET /api/leaves/summary
+// @access  Private
+const getLeaveSummary = async (req, res) => {
   try {
-    const match = req.user.role === 'manager' 
-      ? { managerId: req.user.id }
-      : {};
-    
-    const pipeline = [
+    let match = {};
+    if (req.user.role === 'manager') {
+      const teamMembers = await Employee.find({ managerId: req.user.id });
+      const teamIds = teamMembers.map(e => e._id);
+      match = { employeeId: { $in: teamIds } };
+    }
+
+    const summary = await Leave.aggregate([
       { $match: match },
       {
-        $lookup: {
-          from: "leaves",
-          localField: "_id",
-          foreignField: "employeeId",
-          as: "leaves"
-        }
-      },
-      {
-        $addFields: {
-          totalLeaves: { $size: "$leaves" },
-          pendingLeaves: {
-            $size: {
-              $filter: {
-                input: "$leaves",
-                cond: { $eq: ["$$this.status", "pending"] }
-              }
-            }
-          }
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
         }
       }
-    ];
+    ]);
 
-    const summary = await Employee.aggregate(pipeline);
-    res.json(summary);
+    const totalLeaves = await Leave.countDocuments(match);
+    const pendingLeaves = await Leave.countDocuments({ ...match, status: 'pending' });
+    const approvedLeaves = await Leave.countDocuments({ ...match, status: 'approved' });
+    const rejectedLeaves = await Leave.countDocuments({ ...match, status: 'rejected' });
+
+    res.json({
+      success: true,
+      data: {
+        total: totalLeaves,
+        pending: pendingLeaves,
+        approved: approvedLeaves,
+        rejected: rejectedLeaves,
+        breakdown: summary
+      }
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
 module.exports = {
-  createLeave: exports.createLeave,
-  getMyLeaves: exports.getMyLeaves,
-  getLeavesForApproval: exports.getLeavesForApproval,
-  updateLeaveStatus: exports.updateLeaveStatus,
-  getLeaveSummary: exports.getLeaveSummary
+  createLeave,
+  getMyLeaves,
+  getLeavesForApproval,
+  getAllLeaves,
+  updateLeaveStatus,
+  getLeaveSummary
 };
+

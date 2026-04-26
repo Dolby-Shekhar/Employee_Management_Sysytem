@@ -1,13 +1,18 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const auth = require("../middleware/authMiddleware");
-const profileController = require("../controllers/profileController");
+const {
+  getProfile,
+  updateProfile,
+  changePassword
+} = require('../controllers/profileController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-// GET /api/profile - get current user profile
-router.get("/", auth, profileController.getProfile);
+// All routes are protected
+router.use(authMiddleware);
 
-// PUT /api/profile - update profile
-router.put("/", auth, profileController.updateProfile);
+router.get('/', getProfile);
+router.put('/', updateProfile);
+router.put('/password', changePassword);
 
 module.exports = router;
 

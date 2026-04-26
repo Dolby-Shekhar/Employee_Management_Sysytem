@@ -1,90 +1,97 @@
+require('dotenv').config();
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 const Employee = require('./models/Employee');
-const Attendance = require('./models/Attendance');
+const connectDB = require('./config/db');
 
 const seedData = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to MongoDB for seeding...');
+    await connectDB();
 
-// Clear existing data - removes ALL users/employees/attendance
-    await User.deleteMany({});
-    await Employee.deleteMany({});
-    await Attendance.deleteMany({});
+    // Clear existing data
+    await User.deleteMany();
+    await Employee.deleteMany();
 
-    // Create Admin
-    const hashedAdmin = await bcrypt.hash('admin123', 10);
-    const admin = await User.create({
-      name: 'Admin User',
+    console.log('Previous data cleared');
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash('admin123', salt);
+
+    // Create admin user
+    const adminUser = await User.create({
+      name: 'System Admin',
       email: 'admin@company.com',
-      password: hashedAdmin,
+      password: hashedPassword,
       role: 'admin'
     });
+
+    // Create admin employee record
     await Employee.create({
-      name: 'Admin User',
+      _id: adminUser._id,
+      name: 'System Admin',
       email: 'admin@company.com',
-      password: hashedAdmin,
+      password: hashedPassword,
       role: 'admin',
+      status: 'approved',
       position: 'System Administrator',
-      salary: 120000
+      department: 'IT',
+      salary: 100000
     });
 
-    // Create Manager
-    const hashedManager = await bcrypt.hash('manager123', 10);
-    const manager = await User.create({
+    // Create manager user
+    const managerPassword = await bcrypt.hash('manager123', salt);
+    const managerUser = await User.create({
       name: 'John Manager',
       email: 'manager@company.com',
-      password: hashedManager,
+      password: managerPassword,
       role: 'manager'
     });
-    const managerEmp = await Employee.create({
+
+    const managerEmployee = await Employee.create({
+      _id: managerUser._id,
       name: 'John Manager',
       email: 'manager@company.com',
-      password: hashedManager,
+      password: managerPassword,
       role: 'manager',
-      position: 'Department Manager',
-      salary: 90000,
-      department: 'Management'
+      status: 'approved',
+      position: 'Team Lead',
+      department: 'Engineering',
+      salary: 80000
     });
 
-    // Create Employee
-    const hashedEmp = await bcrypt.hash('emp123', 10);
-    const employee = await User.create({
+    // Create employee user
+    const empPassword = await bcrypt.hash('employee123', salt);
+    const empUser = await User.create({
       name: 'Jane Employee',
       email: 'employee@company.com',
-      password: hashedEmp,
+      password: empPassword,
       role: 'employee'
     });
+
     await Employee.create({
+      _id: empUser._id,
       name: 'Jane Employee',
       email: 'employee@company.com',
-      password: hashedEmp,
+      password: empPassword,
       role: 'employee',
-      position: 'Software Engineer',
-      salary: 75000,
+      status: 'approved',
+      position: 'Software Developer',
       department: 'Engineering',
-      managerId: managerEmp._id
+      salary: 60000,
+      managerId: managerEmployee._id
     });
 
-    // Create sample attendance
-    const today = new Date();
-    today.setHours(9, 30, 0, 0);
-    await Attendance.create({
-      user: employee._id,
-      clockIn: today,
-      date: new Date().setHours(0,0,0,0),
-      late: false
-    });
-
-    console.log('✅ Seeding complete!');
+    console.log('Seed data created successfully!');
     console.log('Admin: admin@company.com / admin123');
     console.log('Manager: manager@company.com / manager123');
-    console.log('Employee: employee@company.com / emp123');
+    console.log('Employee: employee@company.com / employee123');
+
     process.exit(0);
+
   } catch (err) {
-    console.error('Seeding failed:', err);
+    console.error('Seed error:', err);
     process.exit(1);
   }
 };

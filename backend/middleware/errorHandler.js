@@ -1,38 +1,42 @@
 const errorHandler = (err, req, res, next) => {
-  // Hide stack trace in production
-  if (process.env.NODE_ENV === 'production') {
-    delete err.stack;
-  }
+  let statusCode = err.statusCode || 500;
+  let message = err.message || 'Server Error';
 
-  // Default error
-  let error = { ...err };
-  error.message = err.message;
-
-  // Mongoose validation
+  // Mongoose validation error
   if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map(val => val.message).join(', ');
-    error = { statusCode: 400, message };
+    statusCode = 400;
+    message = Object.values(err.errors).map(val => val.message).join(', ');
   }
 
   // Mongoose duplicate key
   if (err.code === 11000) {
-    const message = `Duplicate field value: ${Object.keys(err.keyValue).join(', ')}`;
-    error = { statusCode: 400, message };
+    statusCode = 400;
+    const field = Object.keys(err.keyValue)[0];
+    message = `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`;
+  }
+
+  // Mongoose cast error (invalid ObjectId)
+  if (err.name === 'CastError') {
+    statusCode = 400;
+    message = `Invalid ${err.path}: ${err.value}`;
   }
 
   // JWT errors
   if (err.name === 'JsonWebTokenError') {
-    error = { statusCode: 401, message: 'Invalid token' };
+    statusCode = 401;
+    message = 'Invalid token';
   }
   if (err.name === 'TokenExpiredError') {
-    error = { statusCode: 401, message: 'Token expired' };
+    statusCode = 401;
+    message = 'Token expired';
   }
 
-  res.status(error.statusCode || 500).json({
+  res.status(statusCode).json({
     success: false,
-    message: error.message || 'Server Error',
+    message,
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 };
 
 module.exports = errorHandler;
+

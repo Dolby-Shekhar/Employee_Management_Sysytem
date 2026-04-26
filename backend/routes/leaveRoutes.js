@@ -1,18 +1,30 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const auth = require("../middleware/authMiddleware");
-const admin = require("../middleware/adminMiddleware");
-const controller = require("../controllers/leaveController");
+const {
+  createLeave,
+  getMyLeaves,
+  getLeavesForApproval,
+  getAllLeaves,
+  updateLeaveStatus,
+  getLeaveSummary
+} = require('../controllers/leaveController');
+const authMiddleware = require('../middleware/authMiddleware');
+const adminMiddleware = require('../middleware/adminMiddleware');
+const managerMiddleware = require('../middleware/managerMiddleware');
+
+// All routes are protected
+router.use(authMiddleware);
 
 // Employee routes
-router.post("/", auth, controller.createLeave);
-router.get("/my-leaves", auth, controller.getMyLeaves);
+router.post('/', createLeave);
+router.get('/my', getMyLeaves);
 
-// Manager/Admin approval routes
-router.get("/pending", auth, controller.getLeavesForApproval);
-router.put("/:id/status", auth, controller.updateLeaveStatus);
-
-// Dashboard summary
-router.get("/summary", auth, controller.getLeaveSummary);
+// Manager/Admin routes
+router.get('/approval', managerMiddleware, getLeavesForApproval);
+router.get('/all', adminMiddleware, getAllLeaves);
+router.get('/summary', managerMiddleware, getLeaveSummary);
+router.put('/:id/status', managerMiddleware, updateLeaveStatus);
+router.patch('/:id/status', managerMiddleware, updateLeaveStatus);
 
 module.exports = router;
+

@@ -1,106 +1,157 @@
-const Payroll = require("../models/Payroll");
-const Attendance = require("../models/Attendance");
-const Employee = require("../models/Employee");
+const Payroll = require('../models/Payroll');
+const Employee = require('../models/Employee');
 
-// Generate Payroll for Employee
-exports.generatePayroll = async (req, res) => {
+// @desc    Generate payroll
+// @route   POST /api/payroll
+// @access  Private (Admin)
+const generatePayroll = async (req, res) => {
   try {
-    const { month, year } = req.params;
-    const employeeId = req.user.id;
+    const { employeeId, month, year, baseSalary, workedDays, paidDays, overtimeHours, overtimeRate, deductions, bonuses } = req.body;
+
+    // Validation
+    if (!employeeId || !month || !year || !baseSalary) {
+      return res.status(400).json({ message: 'Please provide employeeId, month, year, and baseSalary' });
+    }
 
     const employee = await Employee.findById(employeeId);
-    if (!employee) return res.status(404).json({ error: "Employee not found" });
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
 
-    // Get attendance for period
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
-
-    const attendanceRecords = await Attendance.find({
-      "user._id": employeeId,
-      date: { $gte: startDate, $lte: endDate }
+    // Check if payroll already exists for this period
+    const existing = await Payroll.findOne({
+      employeeId,
+      'period.month': month,
+      'period.year': year
     });
 
-    const workedDays = attendanceRecords.length;
-    const paidDays = attendanceRecords.filter(r => r.clockIn && r.clockOut).length;
+    if (existing) {
+      return res.status(400).json({ message: 'Payroll already exists for this period' });
+    }
 
-    // Calculate payroll
-    const baseSalary = employee.salary;
-    const dailyRate = baseSalary / 30;
-    const grossPay = paidDays * dailyRate;
+    // Calculate totals
+    const overtimePay = (overtimeHours || 0) * (overtimeRate || 0);
+    const totalBonuses = (bonuses || []).reduce((sum, b) => sum + (b.amount || 0), 0);
+    const totalDeductions = (deductions || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+    const totalEarnings = baseSalary + overtimePay + totalBonuses;
+    const netPay = totalEarnings - totalDeductions;
 
-    const payroll = new Payroll({
+    const payroll = await Payroll.create({
       employeeId,
-      period: { month: parseInt(month), year: parseInt(year) },
+      period: { month, year },
       baseSalary,
-      workedDays,
-      paidDays,
-      totalEarnings: grossPay,
-      netPay: grossPay,
+      workedDays: workedDays || 0,
+      paidDays: paidDays || 0,
+      overtimeHours: overtimeHours || 0,
+      overtimeRate: overtimeRate || 0,
+      deductions: deductions || [],
+      bonuses: bonuses || [],
+      totalEarnings,
+      totalDeductions,
+      netPay,
+      status: 'generated',
       generatedBy: req.user.id
     });
 
-    await payroll.save();
-    await payroll.populate("employeeId generatedBy", "name email");
+    await payroll.populate('employeeId', 'name email department position');
 
-    res.status(201).json({ message: "Payroll generated", payroll });
+    res.status(201).json({
+      success: true,
+      message: 'Payroll generated successfully',
+      data: payroll
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Get My Payroll History
-exports.getMyPayroll = async (req, res) => {
+// @desc    Get all payrolls
+// @route   GET /api/payroll
+// @access  Private (Admin)
+const getAllPayrolls = async (req, res) => {
   try {
-    const payrolls = await Payroll.find({ 
-      employeeId: req.user.id 
-    }).populate("generatedBy", "name")
-      .sort({ "period.year": -1, "period.month": -1 });
-    res.json(payrolls);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+    const { month, year } = req.query;
+    let query = {};
 
-// Get Team Payroll (Manager/Admin)
-exports.getTeamPayroll = async (req, res) => {
-  try {
-    let match = {};
-    if (req.user.role === 'manager') {
-      match.managerId = req.user.id;
+    if (month && year) {
+      query = {
+        'period.month': parseInt(month),
+        'period.year': parseInt(year)
+      };
     }
 
-    const employees = await Employee.find({ ...match, status: 'approved' });
-    const employeeIds = employees.map(e => e._id);
+    const payrolls = await Payroll.find(query)
+      .populate('employeeId', 'name email department position')
+      .populate('generatedBy', 'name')
+      .sort({ createdAt: -1 });
 
-    const payrolls = await Payroll.find({
-      employeeId: { $in: employeeIds }
-    }).populate("employeeId", "name email salary");
+    res.json({ success: true, count: payrolls.length, data: payrolls });
 
-    res.json(payrolls);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 };
 
-// Mark Payroll as Paid
-exports.markPaid = async (req, res) => {
+// @desc    Get my payroll
+// @route   GET /api/payroll/my
+// @access  Private
+const getMyPayroll = async (req, res) => {
+  try {
+    const payrolls = await Payroll.find({ employeeId: req.user.id })
+      .sort({ 'period.year': -1, 'period.month': -1 });
+
+    res.json({ success: true, count: payrolls.length, data: payrolls });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Mark payroll as paid
+// @route   PUT /api/payroll/:id/pay
+// @access  Private (Admin)
+const markAsPaid = async (req, res) => {
   try {
     const payroll = await Payroll.findById(req.params.id);
-    if (!payroll) return res.status(404).json({ error: "Payroll not found" });
+    if (!payroll) {
+      return res.status(404).json({ message: 'Payroll not found' });
+    }
 
-    payroll.status = "paid";
+    payroll.status = 'paid';
     payroll.paidAt = new Date();
     await payroll.save();
 
-    res.json({ message: "Payroll marked as paid", payroll });
+    res.json({ success: true, message: 'Payroll marked as paid', data: payroll });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Delete payroll
+// @route   DELETE /api/payroll/:id
+// @access  Private (Admin)
+const deletePayroll = async (req, res) => {
+  try {
+    const payroll = await Payroll.findById(req.params.id);
+    if (!payroll) {
+      return res.status(404).json({ message: 'Payroll not found' });
+    }
+
+    await Payroll.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Payroll deleted successfully' });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 
 module.exports = {
-  generatePayroll: exports.generatePayroll,
-  getMyPayroll: exports.getMyPayroll,
-  getTeamPayroll: exports.getTeamPayroll,
-  markPaid: exports.markPaid
+  generatePayroll,
+  getAllPayrolls,
+  getMyPayroll,
+  markAsPaid,
+  deletePayroll
 };
+

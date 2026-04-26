@@ -1,115 +1,82 @@
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
+const User = require('../models/User');
+const Employee = require('../models/Employee');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-// REGISTER
+// Generate JWT Token
+const generateToken = (user) => {
+  return jwt.sign(
+    { id: user._id, name: user.name, email: user.email, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRE || '7d' }
+  );
+};
+
+// @desc    Register new user
+// @route   POST /api/auth/register
+// @access  Public
 const registerUser = async (req, res) => {
   try {
-    console.log("📥 REGISTER REQUEST BODY:", req.body);
-
     const { name, email, password, role } = req.body;
 
-    // validate input
-    if (!name || !email || !password || password.length < 8) {
-      return res.status(400).json({
-        message: "Password must be at least 8 characters"
-      });
+    // Validation
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
-    // check if user exists
-    const existingUser = await User.findOne({ email });
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    }
 
+    // Check if user exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return res.status(400).json({
-        message: "User already exists"
-      });
+      return res.status(400).json({ message: 'User with this email already exists' });
     }
 
-    // hash password
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Validate role
+    let userRole = 'employee';
+    if (role === 'admin' || role === 'manager') {
+      userRole = role;
+    }
 
-    // create user
-    let userRole = "employee";
-    if (role === "admin") userRole = "admin";
-    else if (role === "manager") userRole = "manager";
-
+    // Create User
     const user = await User.create({
-      name,
-      email,
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
       password: hashedPassword,
       role: userRole
     });
 
-    console.log("✅ USER CREATED:", user._id);
+    // Create Employee record
+    await Employee.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      role: userRole,
+      status: (userRole === 'admin' || userRole === 'manager') ? 'approved' : 'approved',
+      position: req.body.position || '',
+      salary: req.body.salary || 0,
+      department: req.body.department || ''
+    });
 
-    return res.status(201).json({
-      message: "User registered successfully",
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
+      // Check if employee is approved (skip for admin)
+      if (user.role !== "admin") {
+        const employee = await Employee.findOne({ email: email.toLowerCase() });
+        if (employee && employee.status !== "approved") {
+          return res.status(403).json({ message: "Your account is pending approval. Please contact admin." });
+        }
       }
-    });
 
-  } catch (err) {
-    console.log("❌ REGISTER ERROR:", err);
+          const token = generateToken(user);
 
-    return res.status(500).json({
-      message: "Server error during registration",
-      error: err.message
-    });
-  }
-};
-
-// LOGIN
-const loginUser = async (req, res) => {
-  try {
-    console.log("📥 LOGIN REQUEST BODY:", req.body);
-
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        message: "All fields are required"
-      });
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(400).json({
-        message: "User not found"
-      });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-
-    if (!isMatch) {
-      return res.status(400).json({
-        message: "Invalid credentials"
-      });
-    }
-
-    const jwt = require("jsonwebtoken");
-    if (!process.env.JWT_SECRET) {
-      console.error("❌ JWT_SECRET missing in env");
-      return res.status(500).json({ message: "Server configuration error - contact admin" });
-    }
-    const token = jwt.sign(
-      {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    return res.json({
-      message: "Login successful",
+    res.status(201).json({
+      success: true,
+      message: 'Registration successful',
       token,
       user: {
         id: user._id,
@@ -120,13 +87,75 @@ const loginUser = async (req, res) => {
     });
 
   } catch (err) {
-    console.log("❌ LOGIN ERROR:", err);
-
-    return res.status(500).json({
-      message: "Server error during login",
-      error: err.message
-    });
+    res.status(500).json({ message: err.message || 'Server error during registration' });
   }
 };
 
-module.exports = { registerUser, loginUser };
+// @desc    Login user
+// @route   POST /api/auth/login
+// @access  Public
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and password' });
+    }
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+      // Check if employee is approved (skip for admin)
+      if (user.role !== "admin") {
+        const employee = await Employee.findOne({ email: email.toLowerCase() });
+        if (employee && employee.status !== "approved") {
+          return res.status(403).json({ message: "Your account is pending approval. Please contact admin." });
+        }
+      }
+
+          const token = generateToken(user);
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message || 'Server error during login' });
+  }
+};
+
+// @desc    Get current user
+// @route   GET /api/auth/me
+// @access  Private
+const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ success: true, user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+module.exports = { registerUser, loginUser, getMe };
+

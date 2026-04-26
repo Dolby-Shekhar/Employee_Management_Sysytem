@@ -1,16 +1,41 @@
-const express = require("express");
-const router = express.Router(); // ✅ THIS LINE WAS MISSING
+const express = require('express');
+const router = express.Router();
+const {
+  getEmployees,
+  getEmployee,
+  createEmployee,
+  updateEmployee,
+  deleteEmployee,
+  approveEmployee,
+  addAdmin
+} = require('../controllers/employeeController');
+const authMiddleware = require('../middleware/authMiddleware');
+const adminMiddleware = require('../middleware/adminMiddleware');
+const managerMiddleware = require('../middleware/managerMiddleware');
 
-const controller = require("../controllers/employeeController");
-const auth = require("../middleware/authMiddleware");
-const admin = require("../middleware/adminMiddleware");
+// All routes are protected
+router.use(authMiddleware);
 
-// Routes
-router.get("/", auth, controller.getEmployees);
-router.post("/", auth, controller.createEmployee);
-router.post("/add-admin", auth, admin, controller.addAdmin);
-router.put("/:id", auth, controller.updateEmployee);
-router.delete("/:id", auth, admin, controller.deleteEmployee);
-router.put("/:id/approve", auth, admin, controller.approveEmployee);
+// Get all employees (role-based filtering)
+router.get('/', getEmployees);
+
+// Get single employee
+router.get('/:id', getEmployee);
+
+// Create employee (admin/manager)
+router.post('/', managerMiddleware, createEmployee);
+
+// Update employee
+router.put('/:id', authMiddleware, updateEmployee);
+
+// Approve employee (admin only)
+router.put('/:id/approve', authMiddleware, approveEmployee);
+
+// Add admin (admin only, max 2)
+router.post('/add-admin', adminMiddleware, addAdmin);
+
+// Delete employee (admin only)
+router.delete('/:id', adminMiddleware, deleteEmployee);
 
 module.exports = router;
+

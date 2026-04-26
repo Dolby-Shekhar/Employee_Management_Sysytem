@@ -1,6 +1,9 @@
-module.exports = function (req, res, next) {
-  if (req.user && (req.user.role === "admin" || req.user.role === "leader")) {
+const adminMiddleware = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
     return next();
   }
-  return res.status(403).json({ message: "Admin or leader access required" });
+  return res.status(403).json({ message: 'Admin access required' });
 };
+
+module.exports = adminMiddleware;
+

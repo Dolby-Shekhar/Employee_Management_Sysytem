@@ -1,76 +1,102 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Login from "./components/Login";
-import AdminDashboard from "./components/AdminDashboard";
-import Register from "./components/Register";
-import EmployeePortal from "./components/EmployeePortal";
-import ManagerDashboard from "./components/ManagerDashboard";
-import Sidebar from "./components/Sidebar";
-import Header from "./components/Header";
-import { useContext } from "react";
-import { AuthContext } from "./context/AuthContext";
-import { Box, Typography, Paper, ThemeProvider, CssBaseline } from "@mui/material";
-import theme from "./theme";
+import React, { useContext, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Box, CircularProgress } from '@mui/material';
+import { AuthContext } from './context/AuthContext';
+import { setNavigate } from './utils/navigate';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import Login from './components/Login';
+import Register from './components/Register';
+import AdminDashboard from './components/AdminDashboard';
+import ManagerDashboard from './components/ManagerDashboard';
+import EmployeePortal from './components/EmployeePortal';
+import NotFound from './pages/NotFound';
 
-function PrivateRoute({ children, roles }) {
-  const { user } = useContext(AuthContext);
-  if (!user) return <Navigate to="/" />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/" />;
-  return (
-    <Box sx={{ display: 'flex' }}>
-      <Sidebar />
-      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 4 } }}>
-        <Header toggleDrawer={() => {}} />
-        {children}
+const PrivateRoute = ({ children, allowedRoles }) => {
+  const { user, loading, isAuthenticated } = useContext(AuthContext);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
       </Box>
-    </Box>
-  );
-}
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+};
+
+const RoleBasedRedirect = () => {
+  const { user, loading } = useContext(AuthContext);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!user) return <Navigate to="/" replace />;
+
+  if (user.role === 'admin') return <Navigate to="/dashboard" replace />;
+  if (user.role === 'manager') return <Navigate to="/manager-dashboard" replace />;
+  return <Navigate to="/employee-dashboard" replace />;
+};
+
+const NavigationSetter = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    setNavigate(navigate);
+  }, [navigate]);
+  return null;
+};
 
 function App() {
-  const { user } = useContext(AuthContext);
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box className="container"
-        sx={{
-          minHeight: '100vh',
-          width: '100vw',
-          bgcolor: 'grey.50',
-        }}
-      >
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute roles={["admin"]}>
-                  <AdminDashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/employee-dashboard"
-              element={
-                <PrivateRoute roles={["employee"]}>
-                  <EmployeePortal />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/manager-dashboard"
-              element={
-                <PrivateRoute roles={["manager"]}>
-                  <ManagerDashboard />
-                </PrivateRoute>
-              }
-            />
-          </Routes>
-        </BrowserRouter>
-      </Box>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <NavigationSetter />
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/redirect" element={<RoleBasedRedirect />} />
+
+        <Route
+          path="/dashboard/*"
+          element={
+            <PrivateRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/manager-dashboard/*"
+          element={
+            <PrivateRoute allowedRoles={['manager']}>
+              <ManagerDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/employee-dashboard/*"
+          element={
+            <PrivateRoute allowedRoles={['employee']}>
+              <EmployeePortal />
+            </PrivateRoute>
+          }
+        />
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }
 
 export default App;
-

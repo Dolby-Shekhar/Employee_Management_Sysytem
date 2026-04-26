@@ -1,144 +1,185 @@
-import React, { useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, Avatar, Typography, Box, Paper } from "@mui/material";
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import AttendanceIcon from '@mui/icons-material/AccessTime';
-import PeopleIcon from '@mui/icons-material/People';
-import LeaveIcon from '@mui/icons-material/Event';
-import PayrollIcon from '@mui/icons-material/AccountBalanceWallet';
-import LogoutIcon from '@mui/icons-material/Logout';
-import { styled } from '@mui/material/styles';
+import React, { useContext } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Box,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Toolbar,
+  Typography,
+  Divider,
+  Avatar,
+} from '@mui/material';
+import {
+  Dashboard as DashboardIcon,
+  People as PeopleIcon,
+  AccessTime as AccessTimeIcon,
+  Payment as PaymentIcon,
+  Assessment as AssessmentIcon,
+  EventNote as EventNoteIcon,
+  AccountCircle as AccountCircleIcon,
+  Logout as LogoutIcon,
+} from '@mui/icons-material';
+import { AuthContext } from '../context/AuthContext';
 
-const SidebarPaper = styled(Paper)(({ theme }) => ({
-  width: 280,
-  height: '100vh',
-  background: 'linear-gradient(180deg, rgba(30,58,138,0.95) 0%, rgba(59,130,246,0.95) 100%)',
-  backdropFilter: 'blur(20px)',
-  color: 'white',
-  overflow: 'hidden',
-  position: 'relative',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 200,
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  }
-}));
+const drawerWidth = 260;
 
-const Sidebar = ({ mobileOpen, onDrawerToggle }) => {
-  const { user, logout } = useContext(AuthContext);
+const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
+  const { user, logout, isAdmin, isManager, isEmployee } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const drawer = (
-    <SidebarPaper elevation={24}>
-      <Box sx={{ p: 3, pt: 8, textAlign: 'center' }}>
-        <Avatar 
-          sx={{ 
-            width: 64, 
-            height: 64, 
-            mx: 'auto', 
-            mb: 2,
-            bgcolor: 'rgba(255,255,255,0.2)',
-            fontSize: '1.5rem'
-          }}
-        >
-          {user?.name?.[0]?.toUpperCase()}
-        </Avatar>
-        <Typography variant="h6" fontWeight={700}>
-          {user?.name}
-        </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.8 }}>
-          {user?.role.toUpperCase()}
-        </Typography>
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const getMenuItems = () => {
+    const items = [];
+    if (isAdmin) {
+      items.push(
+        { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
+        { text: 'Employees', icon: <PeopleIcon />, path: '/dashboard/employees' },
+        { text: 'Attendance', icon: <AccessTimeIcon />, path: '/dashboard/attendance' },
+        { text: 'Payroll', icon: <PaymentIcon />, path: '/dashboard/payroll' },
+        { text: 'Performance', icon: <AssessmentIcon />, path: '/dashboard/performance' },
+        { text: 'Leave Requests', icon: <EventNoteIcon />, path: '/dashboard/leaves' },
+      );
+    } else if (isManager) {
+      items.push(
+        { text: 'Dashboard', icon: <DashboardIcon />, path: '/manager-dashboard' },
+        { text: 'My Team', icon: <PeopleIcon />, path: '/manager-dashboard' },
+        { text: 'Attendance', icon: <AccessTimeIcon />, path: '/manager-dashboard' },
+        { text: 'Leave Approvals', icon: <EventNoteIcon />, path: '/manager-dashboard' },
+        { text: 'Performance', icon: <AssessmentIcon />, path: '/manager-dashboard' },
+      );
+    } else if (isEmployee) {
+      items.push(
+        { text: 'Dashboard', icon: <DashboardIcon />, path: '/employee-dashboard' },
+        { text: 'Attendance', icon: <AccessTimeIcon />, path: '/employee-dashboard' },
+        { text: 'Leave', icon: <EventNoteIcon />, path: '/employee-dashboard' },
+        { text: 'Payroll', icon: <PaymentIcon />, path: '/employee-dashboard' },
+        { text: 'Performance', icon: <AssessmentIcon />, path: '/employee-dashboard' },
+        { text: 'Profile', icon: <AccountCircleIcon />, path: '/employee-dashboard' },
+      );
+    }
+    return items;
+  };
+
+  const menuItems = getMenuItems();
+
+  const drawerContent = (
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Toolbar sx={{ px: 2, py: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+            EMS
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem', lineHeight: 1.2 }}>
+              EMS
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
+              {user?.role || 'User'}
+            </Typography>
+          </Box>
+        </Box>
+      </Toolbar>
+
+      <Divider />
+
+      <Box sx={{ flexGrow: 1, overflow: 'auto', py: 1 }}>
+        <List>
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <ListItem key={item.text} disablePadding>
+                <ListItemButton
+                  selected={isActive}
+                  onClick={() => {
+                    navigate(item.path);
+                    onDrawerToggle();
+                  }}
+                  sx={{
+                    mx: 1,
+                    borderRadius: 1,
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '&:hover': {
+                        bgcolor: 'primary.dark',
+                      },
+                      '& .MuiListItemIcon-root': {
+                        color: 'primary.contrastText',
+                      },
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: 40, color: isActive ? 'inherit' : 'text.secondary' }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.text} />
+                </ListItemButton>
+              </ListItem>
+            );
+          })}
+        </List>
       </Box>
-      
-      <Divider sx={{ mx: 2, my: 1, borderColor: 'rgba(255,255,255,0.2)' }} />
-      
-      <List>
-        <ListItem button onClick={() => navigate('/dashboard')}>
-          <ListItemIcon sx={{ color: 'white', minWidth: 48 }}>
-            <DashboardIcon />
-          </ListItemIcon>
-          <ListItemText primary="Dashboard" />
-        </ListItem>
-        
-        <Divider sx={{ mx: 2, my: 0.5, borderColor: 'rgba(255,255,255,0.1)' }} />
-        
-        <ListItem button onClick={() => navigate('/employee-dashboard')}>
-          <ListItemIcon sx={{ color: 'white', minWidth: 48 }}>
-            <AttendanceIcon />
-          </ListItemIcon>
-          <ListItemText primary="Attendance" />
-        </ListItem>
-        
-        <ListItem button onClick={() => navigate('/dashboard')}>
-          <ListItemIcon sx={{ color: 'white', minWidth: 48 }}>
-            <DashboardIcon />
-          </ListItemIcon>
-          <ListItemText primary="Dashboard" />
-        </ListItem>
-        
-        <ListItem button onClick={() => navigate('/employee-dashboard')}>
-          <ListItemIcon sx={{ color: 'white', minWidth: 48 }}>
-            <AttendanceIcon />
-          </ListItemIcon>
-          <ListItemText primary="Attendance" />
-        </ListItem>
-      </List>
 
-      
-      <Divider sx={{ mx: 2, mt: 'auto', borderColor: 'rgba(255,255,255,0.2)' }} />
-      
-      <List sx={{ mt: 'auto' }}>
-        <ListItem button onClick={logout}>
-          <ListItemIcon sx={{ color: 'white', minWidth: 48 }}>
-            <LogoutIcon />
-          </ListItemIcon>
-          <ListItemText primary="Logout" />
+      <Divider />
+
+      <Box sx={{ p: 2 }}>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={handleLogout}
+            sx={{
+              borderRadius: 1,
+              color: 'error.main',
+              '&:hover': {
+                bgcolor: 'error.light',
+                color: 'error.contrastText',
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+              <LogoutIcon />
+            </ListItemIcon>
+            <ListItemText primary="Logout" />
+          </ListItemButton>
         </ListItem>
-      </List>
-    </SidebarPaper>
+      </Box>
+    </Box> // ✅ properly closed
   );
 
   return (
-    <Box
-      component="nav"
-      sx={{ width: { md: 280 }, flexShrink: { md: 0 } }}
-    >
+    <Box component="nav">
       <Drawer
         variant="temporary"
         open={mobileOpen}
         onClose={onDrawerToggle}
-        ModalProps={{
-          keepMounted: true
-        }}
+        ModalProps={{ keepMounted: true }}
         sx={{
-          display: { xs: 'block', md: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 280 },
+          display: { xs: 'block', sm: 'none' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
         }}
       >
-        {drawer}
+        {drawerContent}
       </Drawer>
       <Drawer
         variant="permanent"
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          '& .MuiDrawer-paper': { 
-            boxSizing: 'border-box',
-            position: 'static'
-          },
-        }}
         open
+        sx={{
+          display: { xs: 'none', sm: 'block' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+        }}
       >
-        {drawer}
+        {drawerContent}
       </Drawer>
     </Box>
   );
 };
 
 export default Sidebar;
-

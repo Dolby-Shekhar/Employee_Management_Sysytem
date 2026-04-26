@@ -1,14 +1,30 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const attendanceController = require("../controllers/attendanceController");
-const auth = require("../middleware/authMiddleware");
+const {
+  clockIn,
+  clockOut,
+  getAllAttendance,
+  getMyAttendance,
+  getTodayStatus
+} = require('../controllers/attendanceController');
+const authMiddleware = require('../middleware/authMiddleware');
+const managerMiddleware = require('../middleware/managerMiddleware');
 
-// Employee routes
-router.post("/clock-in", auth, attendanceController.clockIn);
-router.post("/clock-out", auth, attendanceController.clockOut);
+// All routes are protected
+router.use(authMiddleware);
 
-// Admin route
-router.get("/all", auth, attendanceController.getAllAttendance);
-router.get("/my", auth, attendanceController.getMyAttendance);
+// Clock in/out
+router.post('/clock-in', clockIn);
+router.post('/clock-out', clockOut);
+
+// Get my attendance
+router.get('/my', getMyAttendance);
+
+// Get today's status
+router.get('/today', getTodayStatus);
+
+// Get all attendance (admin/manager)
+router.get('/all', managerMiddleware, getAllAttendance);
 
 module.exports = router;
+

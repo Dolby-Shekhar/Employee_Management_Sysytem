@@ -1,19 +1,31 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const auth = require("../middleware/authMiddleware");
-const { 
-  createSelfReview,
+const {
+  createReview,
+  getAllReviews,
   getMyReviews,
-  submitManagerReview,
-  getTeamReviews 
-} = require("../controllers/performanceController");
+  getTeamReviews,
+  updateReview,
+  deleteReview
+} = require('../controllers/performanceController');
+const authMiddleware = require('../middleware/authMiddleware');
+const adminMiddleware = require('../middleware/adminMiddleware');
+const managerMiddleware = require('../middleware/managerMiddleware');
 
-// Employee self-review
-router.post("/self-review", auth, createSelfReview);
-router.get("/my-reviews", auth, getMyReviews);
+// All routes are protected
+router.use(authMiddleware);
 
-// Manager reviews team
-router.post("/manager-review", auth, submitManagerReview);
-router.get("/team-reviews", auth, getTeamReviews);
+// Employee route
+router.get('/my', getMyReviews);
+
+// Manager routes
+router.get('/team', managerMiddleware, getTeamReviews);
+router.post('/', managerMiddleware, createReview);
+router.put('/:id', managerMiddleware, updateReview);
+
+// Admin routes
+router.get('/', adminMiddleware, getAllReviews);
+router.delete('/:id', adminMiddleware, deleteReview);
 
 module.exports = router;
+
