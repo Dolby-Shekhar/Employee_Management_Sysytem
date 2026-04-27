@@ -4,6 +4,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
+const fs = require("fs");
 const connectDB = require("./config/db");
 const errorHandler = require("./middleware/errorHandler");
 
@@ -29,11 +30,6 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Health check
-app.get("/", (req, res) => {
-  res.json({ message: "Employee Management API is running", status: "ok" });
-});
-
 // API Routes
 app.use("/api/auth", authLimiter, require("./routes/authRoutes"));
 app.use("/api/employees", require("./routes/employeeRoutes"));
@@ -43,24 +39,32 @@ app.use("/api/payroll", require("./routes/payrollRoutes"));
 app.use("/api/performance", require("./routes/performanceRoutes"));
 app.use("/api/profile", require("./routes/profileRoutes"));
 
-// Serve React frontend in production
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../frontend/build")));
-  
-  app.use((req, res, next) => {
-    if (req.path.startsWith("/api/")) {
-      return next();
-    }
-    res.sendFile(path.join(__dirname, "../frontend/build", "index.html"));
+// Health check (API only)
+app.get("/api/health", (req, res) => {
+  res.json({ message: "Employee Management API is running", status: "ok" });
+});
+
+// Serve React frontend if build exists
+const buildPath = path.join(__dirname, "../frontend/build");
+if (fs.existsSync(buildPath)) {
+  app.use(express.static(buildPath));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(buildPath, "index.html"));
+  });
+} else {
+  // Fallback if no frontend build exists
+  app.get("/", (req, res) => {
+    res.json({ message: "API is running. Frontend build not found.", status: "ok" });
   });
 }
 
 // Error handler (must be last)
 app.use(errorHandler);
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ message: "Route not found" });
+// 404 handler for API routes only
+app.use("/api/*", (req, res) => {
+  res.status(404).json({ message: "API route not found" });
 });
 
 const PORT = process.env.PORT || 5000;
