@@ -7,9 +7,16 @@ const bcrypt = require('bcryptjs');
 // @access  Private
 const getProfile = async (req, res) => {
   try {
-    const employee = await Employee.findById(req.user.id)
+    let employee = await Employee.findById(req.user.id)
       .populate('managerId', 'name email')
       .select('-password');
+
+    // Fallback: find by email if ID mismatch (for legacy data)
+    if (!employee) {
+      employee = await Employee.findOne({ email: req.user.email })
+        .populate('managerId', 'name email')
+        .select('-password');
+    }
 
     if (!employee) {
       return res.status(404).json({ message: 'Profile not found' });
@@ -49,7 +56,7 @@ const updateProfile = async (req, res) => {
       }
       employee.email = email.toLowerCase().trim();
 
-      // Sync with User model
+      // Sync with User model by aligned _id
       await User.findByIdAndUpdate(req.user.id, { email: email.toLowerCase().trim() });
     }
 
@@ -98,7 +105,7 @@ const changePassword = async (req, res) => {
     user.password = hashedPassword;
     await user.save();
 
-    // Also update Employee password
+    // Also update Employee password by aligned _id
     await Employee.findByIdAndUpdate(req.user.id, { password: hashedPassword });
 
     res.json({ success: true, message: 'Password changed successfully' });
@@ -113,4 +120,3 @@ module.exports = {
   updateProfile,
   changePassword
 };
-

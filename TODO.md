@@ -1,83 +1,29 @@
-# Rebuild Progress Tracker
+# Fix Plan Tracker
 
-## Phase 1: Backend Foundation ✅
-- [x] Create TODO.md tracker
-- [x] Create .env.example
-- [x] Fix server.js
-- [x] Create config/db.js
-- [x] Fix authMiddleware
-- [x] Fix adminMiddleware
-- [x] Create managerMiddleware
-- [x] Fix errorHandler
-- [x] Fix authController
-- [x] Fix employeeController
-- [x] Fix attendanceController
-- [x] Fix leaveController
-- [x] Fix payrollController
-- [x] Fix performanceController
-- [x] Fix profileController
-- [x] Fix authRoutes
-- [x] Fix employeeRoutes
-- [x] Fix attendanceRoutes
-- [x] Fix leaveRoutes
-- [x] Fix payrollRoutes
-- [x] Fix performanceRoutes
-- [x] Fix profileRoutes
-- [x] Fix seed.js
+## Backend Fixes
+- [x] Fix `authController.js`: Ensure `_id: user._id` is set when creating Employee record so IDs align with User.
+- [x] Fix `employeeController.js`: Align Employee `_id` with User `_id` in `createEmployee`, `addAdmin`, and `addManager`. Fix `updateEmployee` to sync User by email instead of mis-matched `_id`.
+- [x] Fix `profileController.js`: Fix `getProfile` fallback and `updateProfile` User sync by aligned _id.
 
-## Phase 2: Frontend Foundation ✅
-- [x] Fix frontend package.json
-- [x] Fix index.js
-- [x] Fix theme.js
-- [x] Fix index.css
-- [x] Fix axiosInstance
-- [x] Fix AuthContext
+## Frontend Fixes
+- [x] Fix `AdminDashboard.js`: Correct leave approval endpoint to `/leaves/{id}/status`. Add missing "Add Employee" dialog JSX. Add Attendance, Payroll, and Pending Approvals tabs. Fix JSX syntax errors.
+- [x] Fix `ManagerDashboard.js`: Add missing "Add Employee" dialog JSX.
 
-## Phase 3: Layout & Navigation ✅
-- [x] Create Layout component
-- [x] Fix Sidebar with role-based menu
-- [x] Fix Header
+## Project Hygiene
+- [x] Create `backend/.env.example` with required environment variables.
+- [x] Fix `.gitignore` to allow `frontend/build` for Render deployment.
+- [x] Remove temporary helper scripts.
 
-## Phase 4: Auth Pages ✅
-- [x] Fix Login
-- [x] Fix Register
+## Build & Deployment
+- [x] Frontend production build succeeds (React 19).
+- [x] Backend starts with `node server.js` and connects to MongoDB Atlas.
+- [x] All 3 login flows verified (Admin, Manager, Employee).
+- [x] Profile/Leave/Payroll/Performance flows verified.
 
-## Phase 5: Admin Dashboard (Tab-Based) ✅
-- [x] Create AdminDashboard with tabs (Overview, Employees, Pending Approvals, Attendance, Leaves, Payroll, Settings)
-
-## Phase 6: Manager Dashboard (Tab-Based) ✅
-- [x] Create ManagerDashboard with tabs (Overview, My Team, Attendance, Leave Approvals, Performance)
-- [x] Add "Add Employee" tab with pending approval
-
-## Phase 7: Employee Portal (Tab-Based) ✅
-- [x] Create EmployeePortal with tabs (Overview, Attendance, Leaves, Payroll, Performance, Profile)
-
-## Phase 8: Common Components ✅
-- [x] Create LoadingScreen
-- [x] Create ConfirmDialog
-- [x] Create ErrorBoundary
-- [x] Create ToastContainer
-- [x] Create DataTable
-
-## Phase 9: App.js & Final Integration ✅
-- [x] Fix App.js with proper routing
-- [x] Add ToastContainer
-- [x] Add ErrorBoundary
-- [x] Add NotFound 404 page
-- [x] Add NavigationSetter for soft navigation
-
-## Phase 10: Testing & Cleanup ✅
-- [x] Remove old redundant files
-- [x] Remove conflicting root package.json
-- [x] Create .env.example
-- [x] Update README with Render deployment guide
-- [x] Verify API routes match between frontend/backend
-- [x] Commit and push all changes
-- [x] Push to GitHub (branch: blackboxai/local-updates)
-
-## Deployment Checklist
-- [ ] Create MongoDB Atlas cluster
-- [ ] Set up Render Web Service
-- [ ] Configure environment variables on Render
-- [ ] Deploy and test all flows
-
+## Render Deployment Checklist
+- [x] `Procfile` present (`web: node server.js`)
+- [x] `backend/server.js` serves `frontend/build` in production (`NODE_ENV=production`)
+- [x] `frontend/build` exists and is not ignored by `.gitignore`
+- [x] Frontend build succeeds with `npm run build`
+- [x] `backend/.env.example` created with all required variables
+- [x] `backend/package.json` has correct `build` script for Render

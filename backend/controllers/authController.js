@@ -52,27 +52,28 @@ const registerUser = async (req, res) => {
       role: userRole
     });
 
-    // Create Employee record
+    // Create Employee record with aligned _id
     await Employee.create({
+      _id: user._id,
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password: hashedPassword,
       role: userRole,
-      status: (userRole === 'admin' || userRole === 'manager') ? 'approved' : 'approved',
+      status: (userRole === 'admin' || userRole === 'manager') ? 'approved' : 'pending',
       position: req.body.position || '',
       salary: req.body.salary || 0,
       department: req.body.department || ''
     });
 
-      // Check if employee is approved (skip for admin)
-      if (user.role !== "admin") {
-        const employee = await Employee.findOne({ email: email.toLowerCase() });
-        if (employee && employee.status !== "approved") {
-          return res.status(403).json({ message: "Your account is pending approval. Please contact admin." });
-        }
+    // Check if employee is approved (skip for admin)
+    if (user.role !== 'admin') {
+      const employee = await Employee.findOne({ email: email.toLowerCase() });
+      if (employee && employee.status !== 'approved') {
+        return res.status(403).json({ message: 'Your account is pending approval. Please contact admin.' });
       }
+    }
 
-          const token = generateToken(user);
+    const token = generateToken(user);
 
     res.status(201).json({
       success: true,
@@ -115,15 +116,15 @@ const loginUser = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-      // Check if employee is approved (skip for admin)
-      if (user.role !== "admin") {
-        const employee = await Employee.findOne({ email: email.toLowerCase() });
-        if (employee && employee.status !== "approved") {
-          return res.status(403).json({ message: "Your account is pending approval. Please contact admin." });
-        }
+    // Check if employee is approved (skip for admin)
+    if (user.role !== 'admin') {
+      const employee = await Employee.findOne({ email: email.toLowerCase() });
+      if (employee && employee.status !== 'approved') {
+        return res.status(403).json({ message: 'Your account is pending approval. Please contact admin.' });
       }
+    }
 
-          const token = generateToken(user);
+    const token = generateToken(user);
 
     res.json({
       success: true,
@@ -158,4 +159,3 @@ const getMe = async (req, res) => {
 };
 
 module.exports = { registerUser, loginUser, getMe };
-

@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+ import React, { useState, useEffect } from 'react';
 import {
   Box, Tabs, Tab, Typography, Grid, Card, CardContent, Button,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, Chip, CircularProgress, IconButton, Stack, Alert, InputAdornment
+  Paper, Chip, CircularProgress, IconButton, Alert, InputAdornment
 } from '@mui/material';
 
 import {
@@ -23,7 +23,7 @@ const TabPanel = ({ children, value, index }) => (
 const StatsCard = ({ title, value, icon, color }) => (
   <Card>
     <CardContent>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography color="text.secondary">{title}</Typography>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>{value}</Typography>
@@ -119,7 +119,18 @@ const AdminDashboard = () => {
     { field: 'department', headerName: 'Department', width: 130 },
     { field: 'position', headerName: 'Position', width: 130 },
     { field: 'salary', headerName: 'Salary', width: 100 },
-
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 120,
+      renderCell: (p) => (
+        <Chip
+          label={p.value}
+          color={p.value === 'approved' ? 'success' : 'warning'}
+          size="small"
+        />
+      )
+    },
     {
       field: 'actions',
       headerName: 'Actions',
@@ -147,6 +158,7 @@ const AdminDashboard = () => {
     }
 
     setFormLoading(true);
+    setFormError('');
 
     try {
       await axiosInstance.post('/employees', {
@@ -156,10 +168,11 @@ const AdminDashboard = () => {
 
       toast.success('Employee added');
       setAddEmployeeDialog(false);
+      setEmployeeForm({ name: '', email: '', password: '', department: '', position: '', salary: '' });
       fetchAllData();
 
-    } catch {
-      toast.error('Failed');
+    } catch (err) {
+      setFormError(err.response?.data?.message || 'Failed to add employee');
     } finally {
       setFormLoading(false);
     }
@@ -189,16 +202,32 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleApproveEmployee = async (id) => {
+    try {
+      await axiosInstance.put(`/employees/${id}/approve`);
+      toast.success('Employee approved');
+      fetchAllData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve employee');
+    }
+  };
+
   const handleApproveLeave = async (id, status) => {
-    await axiosInstance.put(`/leaves/${id}`, { status });
-    toast.success(`Leave ${status}`);
-    fetchAllData();
+    try {
+      await axiosInstance.put(`/leaves/${id}/status`, { status });
+      toast.success(`Leave ${status}`);
+      fetchAllData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update leave status');
+    }
   };
 
   if (loading) {
     return (
       <Layout>
-        <CircularProgress />
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+          <CircularProgress />
+        </Box>
       </Layout>
     );
   }
@@ -210,23 +239,26 @@ const AdminDashboard = () => {
       <Tabs value={tab} onChange={(e, v) => setTab(v)}>
         <Tab label="Overview" />
         <Tab label="Employees" />
+        <Tab label="Pending Approvals" />
+        <Tab label="Attendance" />
         <Tab label="Leaves" />
+        <Tab label="Payroll" />
       </Tabs>
 
       {/* OVERVIEW */}
       <TabPanel value={tab} index={0}>
         <Grid container spacing={2}>
-          <Grid item xs={3}>
+          <Grid item xs={12} sm={6} md={3}>
             <StatsCard title="Employees" value={stats.totalEmployees} icon={<People />} color="primary" />
           </Grid>
-          <Grid item xs={3}>
+          <Grid item xs={12} sm={6} md={3}>
             <StatsCard title="Pending" value={stats.pendingApprovals} icon={<PersonAdd />} color="warning" />
           </Grid>
-          <Grid item xs={3}>
+          <Grid item xs={12} sm={6} md={3}>
             <StatsCard title="Attendance" value={stats.todayAttendance} icon={<AccessTime />} color="success" />
           </Grid>
-          <Grid item xs={3}>
-            <StatsCard title="Payroll" value={`₹${stats.totalPayroll}`} icon={<Payment />} color="info" />
+          <Grid item xs={12} sm={6} md={3}>
+            <StatsCard title="Payroll" value={`₹${stats.totalPayroll.toLocaleString()}`} icon={<Payment />} color="info" />
           </Grid>
         </Grid>
       </TabPanel>
@@ -256,26 +288,34 @@ const AdminDashboard = () => {
         />
       </TabPanel>
 
-      {/* LEAVES */}
+      {/* PENDING APPROVALS */}
       <TabPanel value={tab} index={2}>
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Employee</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Department</TableCell>
+                <TableCell>Position</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
-              {leaves.map(l => (
-                <TableRow key={l._id}>
-                  <TableCell>{l.employeeId?.name}</TableCell>
-                  <TableCell>{l.status}</TableCell>
+              {employees.filter(e => e.status === 'pending').map(emp => (
+                <TableRow key={emp._id}>
+                  <TableCell>{emp.name}</TableCell>
+                  <TableCell>{emp.email}</TableCell>
+                  <TableCell>{emp.department}</TableCell>
+                  <TableCell>{emp.position}</TableCell>
                   <TableCell>
-                    <Button onClick={() => handleApproveLeave(l._id, 'approved')}>Approve</Button>
-                    <Button onClick={() => handleApproveLeave(l._id, 'rejected')}>Reject</Button>
+                    <Chip label={emp.status} color="warning" size="small" />
+                  </TableCell>
+                  <TableCell>
+                    <Button size="small" onClick={() => handleApproveEmployee(emp._id)}>
+                      Approve
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -283,6 +323,224 @@ const AdminDashboard = () => {
           </Table>
         </TableContainer>
       </TabPanel>
+
+      {/* ATTENDANCE */}
+      <TabPanel value={tab} index={3}>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Employee</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Clock In</TableCell>
+                <TableCell>Clock Out</TableCell>
+                <TableCell>Late</TableCell>
+                <TableCell>Early Leave</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {attendance.map(a => (
+                <TableRow key={a._id}>
+                  <TableCell>{a.user?.name}</TableCell>
+                  <TableCell>{a.date ? new Date(a.date).toLocaleDateString() : '-'}</TableCell>
+                  <TableCell>{a.clockIn ? new Date(a.clockIn).toLocaleTimeString() : '-'}</TableCell>
+                  <TableCell>{a.clockOut ? new Date(a.clockOut).toLocaleTimeString() : '-'}</TableCell>
+                  <TableCell>
+                    <Chip label={a.late ? 'Yes' : 'No'} color={a.late ? 'error' : 'success'} size="small" />
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={a.earlyLeave ? 'Yes' : 'No'} color={a.earlyLeave ? 'warning' : 'success'} size="small" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </TabPanel>
+
+      {/* LEAVES */}
+      <TabPanel value={tab} index={4}>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Employee</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell>Start Date</TableCell>
+                <TableCell>End Date</TableCell>
+                <TableCell>Days</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {leaves.map(l => (
+                <TableRow key={l._id}>
+                  <TableCell>{l.employeeId?.name}</TableCell>
+                  <TableCell>{l.type}</TableCell>
+                  <TableCell>{l.startDate ? new Date(l.startDate).toLocaleDateString() : '-'}</TableCell>
+                  <TableCell>{l.endDate ? new Date(l.endDate).toLocaleDateString() : '-'}</TableCell>
+                  <TableCell>{l.days}</TableCell>
+                  <TableCell>
+                    <Chip label={l.status} color={l.status === 'approved' ? 'success' : l.status === 'rejected' ? 'error' : 'warning'} size="small" />
+                  </TableCell>
+                  <TableCell>
+                    {l.status === 'pending' && (
+                      <>
+                        <Button size="small" onClick={() => handleApproveLeave(l._id, 'approved')}>Approve</Button>
+                        <Button size="small" color="error" onClick={() => handleApproveLeave(l._id, 'rejected')}>Reject</Button>
+                      </>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </TabPanel>
+
+      {/* PAYROLL */}
+      <TabPanel value={tab} index={5}>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Employee</TableCell>
+                <TableCell>Month</TableCell>
+                <TableCell>Year</TableCell>
+                <TableCell>Base Salary</TableCell>
+                <TableCell>Net Pay</TableCell>
+                <TableCell>Status</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {payrolls.map(p => (
+                <TableRow key={p._id}>
+                  <TableCell>{p.employeeId?.name}</TableCell>
+                  <TableCell>{p.period?.month}</TableCell>
+                  <TableCell>{p.period?.year}</TableCell>
+                  <TableCell>{p.baseSalary}</TableCell>
+                  <TableCell>{p.netPay}</TableCell>
+                  <TableCell>
+                    <Chip label={p.status} color={p.status === 'paid' ? 'success' : 'info'} size="small" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </TabPanel>
+
+      {/* Add Employee Dialog */}
+      <Dialog open={addEmployeeDialog} onClose={() => setAddEmployeeDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Employee</DialogTitle>
+        <DialogContent>
+          {formError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {formError}
+            </Alert>
+          )}
+          <TextField
+            fullWidth
+            label="Name"
+            value={employeeForm.name}
+            onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Email"
+            value={employeeForm.email}
+            onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Password"
+            type="password"
+            value={employeeForm.password}
+            onChange={(e) => setEmployeeForm({ ...employeeForm, password: e.target.value })}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Department"
+            value={employeeForm.department}
+            onChange={(e) => setEmployeeForm({ ...employeeForm, department: e.target.value })}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Position"
+            value={employeeForm.position}
+            onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Salary"
+            type="number"
+            value={employeeForm.salary}
+            onChange={(e) => setEmployeeForm({ ...employeeForm, salary: e.target.value })}
+            margin="normal"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddEmployeeDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleAddEmployee} disabled={formLoading}>
+            {formLoading ? <CircularProgress size={24} /> : 'Add'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Employee Dialog */}
+      <Dialog open={editDialog} onClose={() => setEditDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Employee</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Name"
+            value={editForm.name || ''}
+            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Email"
+            value={editForm.email || ''}
+            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Department"
+            value={editForm.department || ''}
+            onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Position"
+            value={editForm.position || ''}
+            onChange={(e) => setEditForm({ ...editForm, position: e.target.value })}
+            margin="normal"
+          />
+          <TextField
+            fullWidth
+            label="Salary"
+            type="number"
+            value={editForm.salary || ''}
+            onChange={(e) => setEditForm({ ...editForm, salary: e.target.value })}
+            margin="normal"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleUpdateEmployee} disabled={formLoading}>
+            {formLoading ? <CircularProgress size={24} /> : 'Update'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Layout>
   );
 };

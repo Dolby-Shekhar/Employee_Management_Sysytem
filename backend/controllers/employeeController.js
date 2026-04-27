@@ -85,8 +85,9 @@ const createEmployee = async (req, res) => {
       role: empRole
     });
 
-    // Create Employee
+    // Create Employee with aligned _id
     const employee = await Employee.create({
+      _id: user._id,
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password: hashedPassword,
@@ -134,10 +135,10 @@ const updateEmployee = async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    // Sync with User model if name/email changed
+    // Sync with User model if name/email changed (find User by email since IDs are aligned)
     if (updateData.name || updateData.email) {
-      await User.findByIdAndUpdate(
-        req.params.id,
+      await User.findOneAndUpdate(
+        { email: employee.email },
         {
           ...(updateData.name && { name: updateData.name }),
           ...(updateData.email && { email: updateData.email })
@@ -227,8 +228,9 @@ const addAdmin = async (req, res) => {
       role: 'admin'
     });
 
-    // Create Employee
+    // Create Employee with aligned _id
     const emp = await Employee.create({
+      _id: user._id,
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password: hashedPassword,
@@ -279,8 +281,9 @@ const addManager = async (req, res) => {
       role: 'manager'
     });
 
-    // Create Employee
+    // Create Employee with aligned _id
     const emp = await Employee.create({
+      _id: user._id,
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password: hashedPassword,
@@ -311,4 +314,3 @@ module.exports = {
   addAdmin,
   addManager
 };
-

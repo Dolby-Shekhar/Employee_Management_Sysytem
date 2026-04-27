@@ -335,6 +335,24 @@ const ManagerDashboard = () => {
           <Button variant="contained" onClick={handleCreatePerformance}>Create</Button>
         </DialogActions>
       </Dialog>
+      {/* Add Employee Dialog */}
+      <Dialog open={addEmployeeDialog} onClose={() => setAddEmployeeDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add Employee</DialogTitle>
+        <DialogContent>
+          <TextField fullWidth label="Name" value={employeeForm.name} onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Email" value={employeeForm.email} onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Password" type="password" value={employeeForm.password} onChange={(e) => setEmployeeForm({ ...employeeForm, password: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Department" value={employeeForm.department} onChange={(e) => setEmployeeForm({ ...employeeForm, department: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Position" value={employeeForm.position} onChange={(e) => setEmployeeForm({ ...employeeForm, position: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Salary" type="number" value={employeeForm.salary} onChange={(e) => setEmployeeForm({ ...employeeForm, salary: e.target.value })} margin="normal" />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAddEmployeeDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleAddEmployee} disabled={employeeFormLoading}>
+            {employeeFormLoading ? <CircularProgress size={24} /> : 'Add'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Layout>
   );
 };
