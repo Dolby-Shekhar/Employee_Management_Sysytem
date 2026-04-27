@@ -9,7 +9,7 @@ role: { type: String, enum: ["admin", "manager", "employee"], default: "employee
     position: String,
     salary: Number,
     department: String,
-    managerId: { type: mongoose.Schema.Types.ObjectId, ref: "Employee" },
+    managerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 }, { timestamps: true });
 
 module.exports = mongoose.model("Employee", employeeSchema);

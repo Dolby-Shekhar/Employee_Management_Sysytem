@@ -248,6 +248,59 @@ const addAdmin = async (req, res) => {
   }
 };
 
+// @desc    Add manager (admin only)
+// @route   POST /api/employees/add-manager
+// @access  Private (Admin)
+const addManager = async (req, res) => {
+  try {
+    const { name, email, password, department, position } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    }
+
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create User
+    const user = await User.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      role: 'manager'
+    });
+
+    // Create Employee
+    const emp = await Employee.create({
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      role: 'manager',
+      status: 'approved',
+      department: department || '',
+      position: position || 'Team Manager'
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Manager added successfully',
+      data: { user, employee: emp }
+    });
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   getEmployees,
   getEmployee,
@@ -255,6 +308,7 @@ module.exports = {
   updateEmployee,
   deleteEmployee,
   approveEmployee,
-  addAdmin
+  addAdmin,
+  addManager
 };
 

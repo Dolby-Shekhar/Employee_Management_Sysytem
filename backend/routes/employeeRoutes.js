@@ -7,7 +7,8 @@ const {
   updateEmployee,
   deleteEmployee,
   approveEmployee,
-  addAdmin
+  addAdmin,
+  addManager
 } = require('../controllers/employeeController');
 const authMiddleware = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
@@ -34,8 +35,10 @@ router.put('/:id/approve', authMiddleware, approveEmployee);
 // Add admin (admin only, max 2)
 router.post('/add-admin', adminMiddleware, addAdmin);
 
+// Add manager (admin only)
+router.post('/add-manager', adminMiddleware, addManager);
+
 // Delete employee (admin only)
 router.delete('/:id', adminMiddleware, deleteEmployee);
 
 module.exports = router;
-

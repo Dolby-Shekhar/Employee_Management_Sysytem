@@ -92,10 +92,15 @@ const getAllAttendance = async (req, res) => {
     let query = {};
 
     if (req.user.role === 'manager') {
-      // Get manager's team member IDs
+      // Get manager's team members
       const teamMembers = await Employee.find({ managerId: req.user.id });
-      const teamIds = teamMembers.map(e => e._id.toString());
-      query = { user: { $in: teamIds } };
+      // Attendance.user stores User IDs, not Employee IDs.
+      // Find the corresponding User documents by email to get User IDs.
+      const teamEmails = teamMembers.map(e => e.email);
+      const User = require('../models/User');
+      const teamUsers = await User.find({ email: { $in: teamEmails } });
+      const teamUserIds = teamUsers.map(u => u._id.toString());
+      query = { user: { $in: teamUserIds } };
     }
 
     const records = await Attendance.find(query)
