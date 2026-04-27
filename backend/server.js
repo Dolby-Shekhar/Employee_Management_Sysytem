@@ -49,7 +49,11 @@ const buildPath = path.join(__dirname, "../frontend/build");
 if (fs.existsSync(buildPath)) {
   app.use(express.static(buildPath));
 
-  app.get(/.*/, (req, res) => {
+  // Fallback: serve index.html for any non-API GET request (SPA support)
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api/")) {
+      return next();
+    }
     res.sendFile(path.join(buildPath, "index.html"));
   });
 } else {
@@ -61,11 +65,6 @@ if (fs.existsSync(buildPath)) {
 
 // Error handler (must be last)
 app.use(errorHandler);
-
-// 404 handler for API routes only
-app.use("/api/*", (req, res) => {
-  res.status(404).json({ message: "API route not found" });
-});
 
 const PORT = process.env.PORT || 5000;
 
