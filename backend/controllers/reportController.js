@@ -92,10 +92,31 @@ const markAsRead = async (req, res) => {
   }
 };
 
+// Respond to report (manager)
+const respondToReport = async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) return res.status(404).json({ message: 'Report not found' });
+
+    if (report.managerId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+
+    report.response = req.body.response || '';
+    report.status = 'actioned';
+    await report.save();
+
+    res.json({ success: true, data: report });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 module.exports = {
   createReport,
   updateReport,
   getMyReports,
   getTeamReports,
-  markAsRead
+  markAsRead,
+  respondToReport
 };

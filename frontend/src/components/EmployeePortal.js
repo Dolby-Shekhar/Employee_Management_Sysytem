@@ -49,14 +49,28 @@ const TabPanel = ({ children, value, index }) => (
 );
 
 const StatsCard = ({ title, value, icon, color }) => (
-  <Card>
+  <Card sx={{
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: 6,
+    }
+  }}>
     <CardContent>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Typography color="text.secondary" variant="body2">{title}</Typography>
           <Typography variant="h4" sx={{ fontWeight: 700, mt: 1 }}>{value}</Typography>
         </Box>
-        <Box sx={{ color: color + '.main', bgcolor: color + '.light', p: 1.5, borderRadius: 2 }}>
+        <Box sx={{
+          color: '#fff',
+          p: 1.5,
+          borderRadius: 2,
+          background: color === 'primary' ? 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)' :
+                     color === 'warning' ? 'linear-gradient(135deg, #ed6c02 0%, #ff9800 100%)' :
+                     color === 'success' ? 'linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)' :
+                     'linear-gradient(135deg, #0288d1 0%, #03a9f4 100%)'
+        }}>
           {icon}
         </Box>
       </Box>
@@ -308,10 +322,14 @@ const EmployeePortal = () => {
 
   const attendanceColumns = [
     { field: 'date', headerName: 'Date', width: 120, valueGetter: (p) => p?.value ? new Date(p.value).toLocaleDateString() : "-" },
-    { field: 'clockIn', headerName: 'Clock In', width: 120, valueGetter: (p) => p?.value ? new Date(p.value).toLocaleTimeString() : '-' },
-    { field: 'clockOut', headerName: 'Clock Out', width: 120, valueGetter: (p) => p?.value ? new Date(p.value).toLocaleTimeString() : '-' },
+    { field: 'clockIn', headerName: 'Clock In', width: 120, renderCell: (p) => p?.row?.clockIn?.time ? new Date(p?.row?.clockIn?.time).toLocaleTimeString() : '-' },
+    { field: 'clockOut', headerName: 'Clock Out', width: 120, renderCell: (p) => p?.row?.clockOut?.time ? new Date(p?.row?.clockOut?.time).toLocaleTimeString() : '-' },
     { field: 'late', headerName: 'Late', width: 80, renderCell: (p) => <Chip label={p?.value ? 'Yes' : 'No'} color={p?.value ? 'error' : 'success'} size="small" /> },
     { field: 'earlyLeave', headerName: 'Early', width: 80, renderCell: (p) => <Chip label={p?.value ? 'Yes' : 'No'} color={p?.value ? 'warning' : 'success'} size="small" /> },
+    { field: 'location', headerName: 'Location', width: 150, renderCell: (p) => {
+      const loc = p?.row?.clockIn?.location;
+      return loc ? `${loc.lat?.toFixed(4)}, ${loc.lng?.toFixed(4)}` : 'N/A';
+    }},
   ];
 
   const payrollColumns = [

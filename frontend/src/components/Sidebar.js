@@ -23,6 +23,7 @@ import {
   EventNote as EventNoteIcon,
   AccountCircle as AccountCircleIcon,
   Logout as LogoutIcon,
+  Description as DescriptionIcon,
 } from '@mui/icons-material';
 import { AuthContext } from '../context/AuthContext';
 
@@ -48,6 +49,7 @@ const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
         { text: 'Attendance', icon: <AccessTimeIcon />, path: '/dashboard/attendance' },
         { text: 'Leaves', icon: <EventNoteIcon />, path: '/dashboard/leaves' },
         { text: 'Payroll', icon: <PaymentIcon />, path: '/dashboard/payroll' },
+        { text: 'Profile', icon: <AccountCircleIcon />, path: '/dashboard/profile' },
       );
     } else if (isManager) {
       items.push(
@@ -56,6 +58,8 @@ const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
         { text: 'Attendance', icon: <AccessTimeIcon />, path: '/manager-dashboard/attendance' },
         { text: 'Leave Approvals', icon: <EventNoteIcon />, path: '/manager-dashboard/leave-approvals' },
         { text: 'Performance', icon: <AssessmentIcon />, path: '/manager-dashboard/performance' },
+        { text: 'Reports', icon: <DescriptionIcon />, path: '/manager-dashboard/reports' },
+        { text: 'Profile', icon: <AccountCircleIcon />, path: '/manager-dashboard/profile' },
       );
     } else if (isEmployee) {
       items.push(
@@ -65,6 +69,7 @@ const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
         { text: 'Payroll', icon: <PaymentIcon />, path: '/employee-dashboard/payroll' },
         { text: 'Performance', icon: <AssessmentIcon />, path: '/employee-dashboard/performance' },
         { text: 'Profile', icon: <AccountCircleIcon />, path: '/employee-dashboard/profile' },
+        { text: 'Reports', icon: <DescriptionIcon />, path: '/employee-dashboard/reports' },
       );
     }
     return items;

@@ -55,14 +55,29 @@ const TabPanel = ({ children, value, index }) => (
 );
 
 const StatsCard = ({ title, value, icon, color }) => (
-  <Card>
+  <Card sx={{
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: 6,
+    }
+  }}>
     <CardContent>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
           <Typography color="text.secondary" variant="body2">{title}</Typography>
           <Typography variant="h4" sx={{ fontWeight: 700, mt: 1 }}>{value}</Typography>
         </Box>
-        <Box sx={{ color: `${color}.main`, bgcolor: `${color}.light`, p: 1.5, borderRadius: 2 }}>
+        <Box sx={{
+          color: '#fff',
+          bgcolor: color === 'primary' ? '#1976d2' : color === 'warning' ? '#ed6c02' : color === 'success' ? '#2e7d32' : '#0288d1',
+          p: 1.5,
+          borderRadius: 2,
+          background: color === 'primary' ? 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)' :
+                     color === 'warning' ? 'linear-gradient(135deg, #ed6c02 0%, #ff9800 100%)' :
+                     color === 'success' ? 'linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)' :
+                     'linear-gradient(135deg, #0288d1 0%, #03a9f4 100%)'
+        }}>
           {icon}
         </Box>
       </Box>
@@ -77,6 +92,7 @@ const pathToTab = {
   '/manager-dashboard/leave-approvals': 3,
   '/manager-dashboard/performance': 4,
   '/manager-dashboard/reports': 5,
+  '/manager-dashboard/profile': 6,
 };
 
 const tabToPath = [
@@ -86,6 +102,7 @@ const tabToPath = [
   '/manager-dashboard/leave-approvals',
   '/manager-dashboard/performance',
   '/manager-dashboard/reports',
+  '/manager-dashboard/profile',
 ];
 
 const ManagerDashboard = () => {
@@ -105,6 +122,16 @@ const ManagerDashboard = () => {
   const [employeeForm, setEmployeeForm] = useState({ name: "", email: "", password: "", department: "", position: "", salary: "" });
   const [employeeFormLoading, setEmployeeFormLoading] = useState(false);
   const [perfLoading, setPerfLoading] = useState(false);
+  const [responseDialog, setResponseDialog] = useState(false);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [responseText, setResponseText] = useState('');
+  const [respondLoading, setRespondLoading] = useState(false);
+  const [profileDialog, setProfileDialog] = useState(false);
+  const [passwordDialog, setPasswordDialog] = useState(false);
+  const [profileData, setProfileData] = useState({ name: '', email: '', department: '', position: '' });
+  const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const [leaveActionLoading, setLeaveActionLoading] = useState({});
   const [perfData, setPerfData] = useState({
     employeeId: '', quarter: 'Q1', year: new Date().getFullYear(),
@@ -124,18 +151,25 @@ const ManagerDashboard = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [teamRes, attRes, leaveRes, perfRes, reportRes] = await Promise.all([
+      const [teamRes, attRes, leaveRes, perfRes, reportRes, profRes] = await Promise.all([
         axiosInstance.get('/employees'),
         axiosInstance.get('/attendance/all'),
         axiosInstance.get('/leaves/approval'),
         axiosInstance.get('/performance/team'),
         axiosInstance.get('/reports/team'),
+        axiosInstance.get('/profile'),
       ]);
       setTeam(teamRes.data);
       setAttendance(attRes.data);
       setLeaves(leaveRes.data);
       setPerformances(perfRes.data);
       setReports(reportRes.data?.data || []);
+      setProfileData({
+        name: profRes.data?.name || '',
+        email: profRes.data?.email || '',
+        department: profRes.data?.department || '',
+        position: profRes.data?.position || ''
+      });
 
       const today = new Date().toISOString().split('T')[0];
       setStats({
@@ -165,6 +199,61 @@ const ManagerDashboard = () => {
       toast.error('Failed to update leave status');
     } finally {
       setLeaveActionLoading(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const handleRespondToReport = async () => {
+    if (!selectedReport) return;
+    setRespondLoading(true);
+    try {
+      await axiosInstance.put(`/reports/${selectedReport._id}/respond`, { response: responseText });
+      toast.success('Response sent');
+      setResponseDialog(false);
+      setSelectedReport(null);
+      setResponseText('');
+      fetchAllData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to respond');
+    } finally {
+      setRespondLoading(false);
+    }
+  };
+
+  const openRespondDialog = (report) => {
+    setSelectedReport(report);
+    setResponseText(report.response || '');
+    setResponseDialog(true);
+  };
+
+  const handleUpdateProfile = async () => {
+    setProfileLoading(true);
+    try {
+      await axiosInstance.put('/profile', profileData);
+      toast.success('Profile updated');
+      setProfileDialog(false);
+      fetchAllData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await axiosInstance.put('/auth/password', passwordData);
+      toast.success('Password changed');
+      setPasswordDialog(false);
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to change password');
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -239,13 +328,16 @@ const ManagerDashboard = () => {
   ];
 
   const attendanceColumns = [
-    { field: 'user.name', headerName: 'Employee', width: 150, valueGetter: (p) => p?.row?.user?.name || "-" },
+    { field: 'user', headerName: 'Employee', width: 150, renderCell: (p) => p?.row?.user?.name || p?.row?.employeeId?.name || '-' },
     { field: 'date', headerName: 'Date', width: 120, valueGetter: (p) => p?.value ? new Date(p?.value).toLocaleDateString() : "-" },
-    { field: 'clockIn.time', headerName: 'Clock In', width: 120, valueGetter: (p) => p?.row?.clockIn?.time ? new Date(p?.row?.clockIn?.time).toLocaleTimeString() : '-' },
-    { field: 'clockOut.time', headerName: 'Clock Out', width: 120, valueGetter: (p) => p?.row?.clockOut?.time ? new Date(p?.row?.clockOut?.time).toLocaleTimeString() : '-' },
+    { field: 'clockIn', headerName: 'Clock In', width: 120, renderCell: (p) => p?.row?.clockIn?.time ? new Date(p?.row?.clockIn?.time).toLocaleTimeString() : '-' },
+    { field: 'clockOut', headerName: 'Clock Out', width: 120, renderCell: (p) => p?.row?.clockOut?.time ? new Date(p?.row?.clockOut?.time).toLocaleTimeString() : '-' },
     { field: 'late', headerName: 'Late', width: 80, renderCell: (p) => <Chip label={p?.value ? 'Yes' : 'No'} color={p?.value ? 'error' : 'success'} size="small" /> },
     { field: 'earlyLeave', headerName: 'Early Leave', width: 100, renderCell: (p) => <Chip label={p?.value ? 'Yes' : 'No'} color={p?.value ? 'warning' : 'success'} size="small" /> },
-    { field: 'clockIn.location', headerName: 'Location', width: 150, valueGetter: (p) => p?.row?.clockIn?.location ? `${p?.row?.clockIn?.location?.lat}, ${p?.row?.clockIn?.location?.lng}` : 'N/A' },
+    { field: 'location', headerName: 'Location', width: 150, renderCell: (p) => {
+      const loc = p?.row?.clockIn?.location;
+      return loc ? `${loc.lat?.toFixed(4)}, ${loc.lng?.toFixed(4)}` : 'N/A';
+    }},
   ];
 
   const performanceColumns = [
@@ -275,6 +367,7 @@ const ManagerDashboard = () => {
         <Tab label="Leave Approvals" />
         <Tab label="Performance" />
         <Tab label="Reports" />
+        <Tab label="Profile" icon={<AccountCircle sx={{ fontSize: 18 }} />} iconPosition="end" />
       </Tabs>
 
       {/* Overview */}
@@ -403,7 +496,9 @@ const ManagerDashboard = () => {
                   <TableCell>Content</TableCell>
                   <TableCell>Priority</TableCell>
                   <TableCell>Status</TableCell>
+                  <TableCell>Response</TableCell>
                   <TableCell>Date</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -430,7 +525,19 @@ const ManagerDashboard = () => {
                         size="small"
                       />
                     </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {report.response || '-'}
+                      </Typography>
+                    </TableCell>
                     <TableCell>{new Date(report.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {report.status !== 'actioned' && (
+                        <Button size="small" variant="outlined" onClick={() => openRespondDialog(report)}>
+                          {report.status === 'sent' ? 'Mark Read' : 'Respond'}
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -507,6 +614,100 @@ const ManagerDashboard = () => {
           <Button onClick={() => setAddEmployeeDialog(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleAddEmployee} disabled={employeeFormLoading}>
             {employeeFormLoading ? <CircularProgress size={24} /> : 'Add'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Profile TabPanel */}
+      <TabPanel value={tab} index={6}>
+        <Card sx={{ maxWidth: 600, mx: 'auto' }}>
+          <CardContent>
+            <Typography variant="h5" sx={{ mb: 3 }}>My Profile</Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="body2" color="text.secondary">Name</Typography>
+                <Typography variant="h6">{profileData.name}</Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="body2" color="text.secondary">Email</Typography>
+                <Typography variant="h6">{profileData.email}</Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="body2" color="text.secondary">Department</Typography>
+                <Typography variant="h6">{profileData.department || 'Not set'}</Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="body2" color="text.secondary">Position</Typography>
+                <Typography variant="h6">{profileData.position || 'Not set'}</Typography>
+              </Grid>
+            </Grid>
+            <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>
+              <Button variant="contained" onClick={() => setProfileDialog(true)}>Edit Profile</Button>
+              <Button variant="outlined" onClick={() => setPasswordDialog(true)}>Change Password</Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </TabPanel>
+
+      {/* Response Dialog */}
+      <Dialog open={responseDialog} onClose={() => setResponseDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Respond to Report</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            <strong>From:</strong> {selectedReport?.employeeId?.name}<br />
+            <strong>Title:</strong> {selectedReport?.title}
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 2, p: 1, bgcolor: 'grey.100', borderRadius: 1 }}>
+            {selectedReport?.content}
+          </Typography>
+          <TextField
+            fullWidth
+            label="Your Response"
+            multiline
+            rows={4}
+            value={responseText}
+            onChange={(e) => setResponseText(e.target.value)}
+            margin="normal"
+            placeholder="Write your response to this report..."
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResponseDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleRespondToReport} disabled={respondLoading}>
+            {respondLoading ? <CircularProgress size={24} /> : 'Send Response'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Profile Dialog */}
+      <Dialog open={profileDialog} onClose={() => setProfileDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Edit Profile</DialogTitle>
+        <DialogContent>
+          <TextField fullWidth label="Name" value={profileData.name} onChange={(e) => setProfileData({ ...profileData, name: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Email" value={profileData.email} onChange={(e) => setProfileData({ ...profileData, email: e.target.value })} margin="normal" disabled />
+          <TextField fullWidth label="Department" value={profileData.department} onChange={(e) => setProfileData({ ...profileData, department: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Position" value={profileData.position} onChange={(e) => setProfileData({ ...profileData, position: e.target.value })} margin="normal" />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setProfileDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleUpdateProfile} disabled={profileLoading}>
+            {profileLoading ? <CircularProgress size={24} /> : 'Update'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Password Dialog */}
+      <Dialog open={passwordDialog} onClose={() => setPasswordDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Change Password</DialogTitle>
+        <DialogContent>
+          <TextField fullWidth label="Current Password" type="password" value={passwordData.currentPassword} onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })} margin="normal" />
+          <TextField fullWidth label="New Password" type="password" value={passwordData.newPassword} onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })} margin="normal" />
+          <TextField fullWidth label="Confirm Password" type="password" value={passwordData.confirmPassword} onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} margin="normal" />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPasswordDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleChangePassword} disabled={passwordLoading}>
+            {passwordLoading ? <CircularProgress size={24} /> : 'Change'}
           </Button>
         </DialogActions>
       </Dialog>
