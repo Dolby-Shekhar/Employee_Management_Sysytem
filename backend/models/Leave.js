@@ -32,7 +32,7 @@ const leaveSchema = new mongoose.Schema({
   managerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Employee",
-    required: true
+    default: null
   },
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,

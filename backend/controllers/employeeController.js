@@ -1,5 +1,9 @@
 const Employee = require('../models/Employee');
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
+const Leave = require('../models/Leave');
+const Payroll = require('../models/Payroll');
+const PerformanceReview = require('../models/PerformanceReview');
 const bcrypt = require('bcryptjs');
 
 // @desc    Get all employees (with role-based filtering)
@@ -13,14 +17,34 @@ const getEmployees = async (req, res) => {
     if (role === 'manager') {
       // Managers see their team members
       query = { managerId: id };
+    } else if (role === 'employee') {
+      // Employees only see themselves
+      query = { _id: id };
     }
     // Admin sees all (no query filter)
 
-    const employees = await Employee.find(query)
-      .populate('managerId', 'name email')
-      .sort({ createdAt: -1 });
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    res.json({ success: true, count: employees.length, data: employees });
+    const [employees, total] = await Promise.all([
+      Employee.find(query)
+        .populate('managerId', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Employee.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      count: employees.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: employees
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -164,11 +188,19 @@ const deleteEmployee = async (req, res) => {
       return res.status(404).json({ message: 'Employee not found' });
     }
 
-    // Also delete associated User
-    await User.findOneAndDelete({ email: employee.email });
-    await Employee.findByIdAndDelete(req.params.id);
+    const userId = employee._id;
 
-    res.json({ success: true, message: 'Employee deleted successfully' });
+    // Cascade delete related records
+    await Promise.all([
+      Attendance.deleteMany({ user: userId }),
+      Leave.deleteMany({ employeeId: userId }),
+      Payroll.deleteMany({ employeeId: userId }),
+      PerformanceReview.deleteMany({ employeeId: userId }),
+      User.findByIdAndDelete(userId),
+      Employee.findByIdAndDelete(req.params.id)
+    ]);
+
+    res.json({ success: true, message: 'Employee and all related records deleted successfully' });
 
   } catch (err) {
     res.status(500).json({ message: err.message });

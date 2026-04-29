@@ -1,29 +1,22 @@
-# Fix Plan Tracker
+# Implementation Plan - Role-based Employee Creation & Profile Tabs
 
-## Backend Fixes
-- [x] Fix `authController.js`: Ensure `_id: user._id` is set when creating Employee record so IDs align with User.
-- [x] Fix `employeeController.js`: Align Employee `_id` with User `_id` in `createEmployee`, `addAdmin`, and `addManager`. Fix `updateEmployee` to sync User by email instead of mis-matched `_id`.
-- [x] Fix `profileController.js`: Fix `getProfile` fallback and `updateProfile` User sync by aligned _id.
+## Phase 1: AdminDashboard.js Updates [COMPLETED ✅]
+- [x] Added Profile imports and state variables
+- [x] Added Profile tab routing (index 6)  
+- [x] Added Role dropdown to Add Employee dialog
+- [x] Implemented role-based API routing (/employees vs /add-manager)
+- [x] Added complete Profile tab content
 
-## Frontend Fixes
-- [x] Fix `AdminDashboard.js`: Correct leave approval endpoint to `/leaves/{id}/status`. Add missing "Add Employee" dialog JSX. Add Attendance, Payroll, and Pending Approvals tabs. Fix JSX syntax errors.
-- [x] Fix `ManagerDashboard.js`: Add missing "Add Employee" dialog JSX.
+## Phase 2: ManagerDashboard.js Updates [COMPLETED ✅]
+- [x] Added Profile tab, state, and handlers
+- [x] Added Role dropdown to Add Employee dialog  
+- [x] Fixed ESLint issues and duplicate imports
 
-## Project Hygiene
-- [x] Create `backend/.env.example` with required environment variables.
-- [x] Fix `.gitignore` to allow `frontend/build` for Render deployment.
-- [x] Remove temporary helper scripts.
+## Phase 3: Testing & Verification
+- [ ] Test employee creation (Employee vs Manager)
+- [ ] Test profile functionality
+- [ ] Clean up test data
 
-## Build & Deployment
-- [x] Frontend production build succeeds (React 19).
-- [x] Backend starts with `node server.js` and connects to MongoDB Atlas.
-- [x] All 3 login flows verified (Admin, Manager, Employee).
-- [x] Profile/Leave/Payroll/Performance flows verified.
+**Next Step**: Update ManagerDashboard.js with Profile tab & role dropdown
 
-## Render Deployment Checklist
-- [x] `Procfile` present (`web: node server.js`)
-- [x] `backend/server.js` serves `frontend/build` in production (`NODE_ENV=production`)
-- [x] `frontend/build` exists and is not ignored by `.gitignore`
-- [x] Frontend build succeeds with `npm run build`
-- [x] `backend/.env.example` created with all required variables
-- [x] `backend/package.json` has correct `build` script for Render
+

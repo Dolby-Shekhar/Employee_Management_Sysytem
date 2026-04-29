@@ -16,6 +16,7 @@ import {
 import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
+  PersonAdd as PersonAddIcon,
   AccessTime as AccessTimeIcon,
   Payment as PaymentIcon,
   Assessment as AssessmentIcon,
@@ -43,27 +44,27 @@ const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
       items.push(
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
         { text: 'Employees', icon: <PeopleIcon />, path: '/dashboard/employees' },
+        { text: 'Pending Approvals', icon: <PersonAddIcon />, path: '/dashboard/pending-approvals' },
         { text: 'Attendance', icon: <AccessTimeIcon />, path: '/dashboard/attendance' },
+        { text: 'Leaves', icon: <EventNoteIcon />, path: '/dashboard/leaves' },
         { text: 'Payroll', icon: <PaymentIcon />, path: '/dashboard/payroll' },
-        { text: 'Performance', icon: <AssessmentIcon />, path: '/dashboard/performance' },
-        { text: 'Leave Requests', icon: <EventNoteIcon />, path: '/dashboard/leaves' },
       );
     } else if (isManager) {
       items.push(
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/manager-dashboard' },
-        { text: 'My Team', icon: <PeopleIcon />, path: '/manager-dashboard' },
-        { text: 'Attendance', icon: <AccessTimeIcon />, path: '/manager-dashboard' },
-        { text: 'Leave Approvals', icon: <EventNoteIcon />, path: '/manager-dashboard' },
-        { text: 'Performance', icon: <AssessmentIcon />, path: '/manager-dashboard' },
+        { text: 'My Team', icon: <PeopleIcon />, path: '/manager-dashboard/team' },
+        { text: 'Attendance', icon: <AccessTimeIcon />, path: '/manager-dashboard/attendance' },
+        { text: 'Leave Approvals', icon: <EventNoteIcon />, path: '/manager-dashboard/leave-approvals' },
+        { text: 'Performance', icon: <AssessmentIcon />, path: '/manager-dashboard/performance' },
       );
     } else if (isEmployee) {
       items.push(
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/employee-dashboard' },
-        { text: 'Attendance', icon: <AccessTimeIcon />, path: '/employee-dashboard' },
-        { text: 'Leave', icon: <EventNoteIcon />, path: '/employee-dashboard' },
-        { text: 'Payroll', icon: <PaymentIcon />, path: '/employee-dashboard' },
-        { text: 'Performance', icon: <AssessmentIcon />, path: '/employee-dashboard' },
-        { text: 'Profile', icon: <AccountCircleIcon />, path: '/employee-dashboard' },
+        { text: 'Attendance', icon: <AccessTimeIcon />, path: '/employee-dashboard/attendance' },
+        { text: 'Leave', icon: <EventNoteIcon />, path: '/employee-dashboard/leave' },
+        { text: 'Payroll', icon: <PaymentIcon />, path: '/employee-dashboard/payroll' },
+        { text: 'Performance', icon: <AssessmentIcon />, path: '/employee-dashboard/performance' },
+        { text: 'Profile', icon: <AccountCircleIcon />, path: '/employee-dashboard/profile' },
       );
     }
     return items;

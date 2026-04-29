@@ -96,12 +96,29 @@ const getLeavesForApproval = async (req, res) => {
 // @access  Private (Admin)
 const getAllLeaves = async (req, res) => {
   try {
-    const leaves = await Leave.find()
-      .populate('employeeId', 'name email department')
-      .populate('approvedBy', 'name')
-      .sort({ createdAt: -1 });
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    res.json({ success: true, count: leaves.length, data: leaves });
+    const [leaves, total] = await Promise.all([
+      Leave.find()
+        .populate('employeeId', 'name email department')
+        .populate('approvedBy', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Leave.countDocuments()
+    ]);
+
+    res.json({
+      success: true,
+      count: leaves.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: leaves
+    });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -110,7 +127,7 @@ const getAllLeaves = async (req, res) => {
 
 // @desc    Update leave status
 // @route   PUT /api/leaves/:id/status
-// @access  Private (Manager/Admin)
+// @access  Private (Manager only - must be the assigned manager)
 const updateLeaveStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -124,12 +141,25 @@ const updateLeaveStatus = async (req, res) => {
       return res.status(404).json({ message: 'Leave request not found' });
     }
 
-    // Authorization check
+    // Only the assigned manager can approve/reject
+    // Admins cannot approve/reject leaves - only managers can
+    if (req.user.role === 'admin') {
+      return res.status(403).json({ message: 'Only the assigned manager can approve or reject leave requests' });
+    }
+
     if (req.user.role === 'manager') {
-      const teamMembers = await Employee.find({ managerId: req.user.id });
-      const teamIds = teamMembers.map(e => e._id.toString());
-      if (!teamIds.includes(leave.employeeId.toString())) {
-        return res.status(403).json({ message: 'Not authorized to manage this leave' });
+      // Check if this manager is the assigned manager for this leave
+      if (leave.managerId && leave.managerId.toString() !== req.user.id) {
+        return res.status(403).json({ message: 'You are not the assigned manager for this employee' });
+      }
+      
+      // If no manager assigned, check if this manager manages the employee
+      if (!leave.managerId) {
+        const teamMembers = await Employee.find({ managerId: req.user.id });
+        const teamIds = teamMembers.map(e => e._id.toString());
+        if (!teamIds.includes(leave.employeeId.toString())) {
+          return res.status(403).json({ message: 'Not authorized to manage this leave' });
+        }
       }
     }
 

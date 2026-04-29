@@ -30,7 +30,7 @@ router.post('/', managerMiddleware, createEmployee);
 router.put('/:id', authMiddleware, updateEmployee);
 
 // Approve employee (admin only)
-router.put('/:id/approve', authMiddleware, approveEmployee);
+router.put('/:id/approve', adminMiddleware, approveEmployee);
 
 // Add admin (admin only, max 2)
 router.post('/add-admin', adminMiddleware, addAdmin);

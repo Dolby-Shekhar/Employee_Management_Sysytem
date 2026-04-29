@@ -73,12 +73,29 @@ const createReview = async (req, res) => {
 // @access  Private (Admin)
 const getAllReviews = async (req, res) => {
   try {
-    const reviews = await PerformanceReview.find()
-      .populate('employeeId', 'name email department')
-      .populate('reviewerId', 'name')
-      .sort({ createdAt: -1 });
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    res.json({ success: true, count: reviews.length, data: reviews });
+    const [reviews, total] = await Promise.all([
+      PerformanceReview.find()
+        .populate('employeeId', 'name email department')
+        .populate('reviewerId', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      PerformanceReview.countDocuments()
+    ]);
+
+    res.json({
+      success: true,
+      count: reviews.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: reviews
+    });
 
   } catch (err) {
     res.status(500).json({ message: err.message });

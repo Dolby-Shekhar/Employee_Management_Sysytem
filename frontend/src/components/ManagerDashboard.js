@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Tabs,
@@ -23,17 +24,30 @@ import {
   Chip,
   CircularProgress,
   Rating,
+  Alert,
+  Avatar,
+  Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  InputAdornment
 } from '@mui/material';
 import {
   People, PersonAdd,
   AccessTime,
   EventNote,
   Assessment,
+  AccountCircle
 } from '@mui/icons-material';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { DataGrid } from '@mui/x-data-grid';
 import { toast } from 'react-toastify';
 import axiosInstance from '../utils/axiosInstance';
 import Layout from './Layout';
+import LoadingScreen from './common/LoadingScreen';
+import EmptyState from './common/EmptyState';
+import { exportToCSV } from '../utils/exportUtils';
 
 const TabPanel = ({ children, value, index }) => (
   value === index && <Box sx={{ py: 2 }}>{children}</Box>
@@ -55,8 +69,26 @@ const StatsCard = ({ title, value, icon, color }) => (
   </Card>
 );
 
+const pathToTab = {
+  '/manager-dashboard': 0,
+  '/manager-dashboard/team': 1,
+  '/manager-dashboard/attendance': 2,
+  '/manager-dashboard/leave-approvals': 3,
+  '/manager-dashboard/performance': 4,
+};
+
+const tabToPath = [
+  '/manager-dashboard',
+  '/manager-dashboard/team',
+  '/manager-dashboard/attendance',
+  '/manager-dashboard/leave-approvals',
+  '/manager-dashboard/performance',
+];
+
 const ManagerDashboard = () => {
-  const [tab, setTab] = useState(0);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState(pathToTab[location.pathname] ?? 0);
   const [loading, setLoading] = useState(false);
   const [team, setTeam] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -64,10 +96,12 @@ const ManagerDashboard = () => {
   const [performances, setPerformances] = useState([]);
   const [stats, setStats] = useState({ teamSize: 0, pendingLeaves: 0, todayAttendance: 0, avgPerformance: 0 });
 
-    const [perfDialog, setPerfDialog] = useState(false);
+  const [perfDialog, setPerfDialog] = useState(false);
   const [addEmployeeDialog, setAddEmployeeDialog] = useState(false);
   const [employeeForm, setEmployeeForm] = useState({ name: "", email: "", password: "", department: "", position: "", salary: "" });
   const [employeeFormLoading, setEmployeeFormLoading] = useState(false);
+  const [perfLoading, setPerfLoading] = useState(false);
+  const [leaveActionLoading, setLeaveActionLoading] = useState({});
   const [perfData, setPerfData] = useState({
     employeeId: '', quarter: 'Q1', year: new Date().getFullYear(),
     productivity: 5, teamwork: 5, quality: 5, initiative: 5,
@@ -77,6 +111,11 @@ const ManagerDashboard = () => {
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  useEffect(() => {
+    const newTab = pathToTab[location.pathname];
+    if (newTab !== undefined) setTab(newTab);
+  }, [location.pathname]);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -108,23 +147,44 @@ const ManagerDashboard = () => {
     }
   };
 
-  const handleTabChange = (e, newValue) => setTab(newValue);
+  const handleTabChange = (e, newValue) => navigate(tabToPath[newValue]);
 
   const handleApproveLeave = async (id, status) => {
+    setLeaveActionLoading(prev => ({ ...prev, [id]: true }));
     try {
       await axiosInstance.patch(`/leaves/${id}/status`, { status });
       toast.success(`Leave ${status}`);
       fetchAllData();
     } catch (err) {
       toast.error('Failed to update leave status');
+    } finally {
+      setLeaveActionLoading(prev => ({ ...prev, [id]: false }));
     }
   };
 
+  const [employeeFormError, setEmployeeFormError] = useState('');
+
+  const validateManagerEmployeeForm = () => {
+    if (!employeeForm.name.trim() || !employeeForm.email.trim() || !employeeForm.password) {
+      return 'Name, email, and password are required';
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(employeeForm.email)) {
+      return 'Please enter a valid email address';
+    }
+    if (employeeForm.password.length < 8) {
+      return 'Password must be at least 8 characters';
+    }
+    return '';
+  };
+
   const handleAddEmployee = async () => {
-    if (!employeeForm.name || !employeeForm.email || !employeeForm.password) {
-      toast.error("Please fill in all required fields");
+    const error = validateManagerEmployeeForm();
+    if (error) {
+      setEmployeeFormError(error);
       return;
     }
+    setEmployeeFormError('');
     setEmployeeFormLoading(true);
     try {
       await axiosInstance.post("/employees", {
@@ -148,6 +208,7 @@ const ManagerDashboard = () => {
   };
 
   const handleCreatePerformance = async () => {
+    setPerfLoading(true);
     try {
       await axiosInstance.post('/performance', perfData);
       toast.success('Performance review created');
@@ -156,6 +217,8 @@ const ManagerDashboard = () => {
       fetchAllData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create review');
+    } finally {
+      setPerfLoading(false);
     }
   };
 
@@ -188,9 +251,7 @@ const ManagerDashboard = () => {
   if (loading && team.length === 0) {
     return (
       <Layout>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-          <CircularProgress />
-        </Box>
+        <LoadingScreen message="Loading dashboard data..." />
       </Layout>
     );
   }
@@ -227,58 +288,82 @@ const ManagerDashboard = () => {
 
       {/* My Team */}
       <TabPanel value={tab} index={1}>
-          <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-end" }}>
-            <Button variant="contained" color="primary" startIcon={<PersonAdd />} onClick={() => setAddEmployeeDialog(true)}>Add Employee</Button>
-          </Box>
-        <DataGrid rows={team} columns={teamColumns} pageSize={10} rowsPerPageOptions={[10, 25, 50]} getRowId={(r) => r._id} autoHeight />
+        <Box sx={{ mb: 2, display: "flex", justifyContent: "flex-end", gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            onClick={() => exportToCSV(team, teamColumns, 'team')}
+            disabled={team.length === 0}
+          >
+            Export
+          </Button>
+          <Button variant="contained" color="primary" startIcon={<PersonAdd />} onClick={() => setAddEmployeeDialog(true)}>Add Employee</Button>
+        </Box>
+        {team.length === 0 ? (
+          <EmptyState message="No team members found" />
+        ) : (
+          <DataGrid rows={team} columns={teamColumns} pageSize={10} rowsPerPageOptions={[10, 25, 50]} getRowId={(r) => r._id} autoHeight />
+        )}
       </TabPanel>
 
       {/* Attendance */}
       <TabPanel value={tab} index={2}>
-        <DataGrid rows={attendance} columns={attendanceColumns} pageSize={10} rowsPerPageOptions={[10, 25, 50]} getRowId={(r) => r._id} autoHeight />
+        {attendance.length === 0 ? (
+          <EmptyState message="No attendance records found" />
+        ) : (
+          <DataGrid rows={attendance} columns={attendanceColumns} pageSize={10} rowsPerPageOptions={[10, 25, 50]} getRowId={(r) => r._id} autoHeight />
+        )}
       </TabPanel>
 
       {/* Leave Approvals */}
       <TabPanel value={tab} index={3}>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Employee</TableCell>
-                <TableCell>Type</TableCell>
-                <TableCell>Start Date</TableCell>
-                <TableCell>End Date</TableCell>
-                <TableCell>Days</TableCell>
-                <TableCell>Reason</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {leaves.map((leave) => (
-                <TableRow key={leave._id}>
-                  <TableCell>{leave.employeeId?.name}</TableCell>
-                  <TableCell>{leave.type}</TableCell>
-                  <TableCell>{new Date(leave.startDate).toLocaleDateString()}</TableCell>
-                  <TableCell>{new Date(leave.endDate).toLocaleDateString()}</TableCell>
-                  <TableCell>{leave.days}</TableCell>
-                  <TableCell>{leave.reason}</TableCell>
-                  <TableCell>
-                    <Chip label={leave.status} color={leave.status === 'approved' ? 'success' : leave.status === 'rejected' ? 'error' : 'warning'} size="small" />
-                  </TableCell>
-                  <TableCell>
-                    {leave.status === 'pending' && (
-                      <>
-                        <Button size="small" color="success" onClick={() => handleApproveLeave(leave._id, 'approved')}>Approve</Button>
-                        <Button size="small" color="error" onClick={() => handleApproveLeave(leave._id, 'rejected')}>Reject</Button>
-                      </>
-                    )}
-                  </TableCell>
+        {leaves.length === 0 ? (
+          <EmptyState message="No leave requests found" />
+        ) : (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Employee</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Start Date</TableCell>
+                  <TableCell>End Date</TableCell>
+                  <TableCell>Days</TableCell>
+                  <TableCell>Reason</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {leaves.map((leave) => (
+                  <TableRow key={leave._id}>
+                    <TableCell>{leave.employeeId?.name}</TableCell>
+                    <TableCell>{leave.type}</TableCell>
+                    <TableCell>{new Date(leave.startDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(leave.endDate).toLocaleDateString()}</TableCell>
+                    <TableCell>{leave.days}</TableCell>
+                    <TableCell>{leave.reason}</TableCell>
+                    <TableCell>
+                      <Chip label={leave.status} color={leave.status === 'approved' ? 'success' : leave.status === 'rejected' ? 'error' : 'warning'} size="small" />
+                    </TableCell>
+                    <TableCell>
+                      {leave.status === 'pending' && (
+                        <>
+                          <Button size="small" color="success" onClick={() => handleApproveLeave(leave._id, 'approved')} disabled={leaveActionLoading[leave._id]}>
+                            {leaveActionLoading[leave._id] ? <CircularProgress size={16} /> : 'Approve'}
+                          </Button>
+                          <Button size="small" color="error" onClick={() => handleApproveLeave(leave._id, 'rejected')} disabled={leaveActionLoading[leave._id]}>
+                            {leaveActionLoading[leave._id] ? <CircularProgress size={16} /> : 'Reject'}
+                          </Button>
+                        </>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
       </TabPanel>
 
       {/* Performance */}
@@ -286,7 +371,11 @@ const ManagerDashboard = () => {
         <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
           <Button variant="contained" onClick={() => setPerfDialog(true)}>Add Review</Button>
         </Box>
-        <DataGrid rows={performances} columns={performanceColumns} pageSize={10} rowsPerPageOptions={[10, 25, 50]} getRowId={(r) => r._id} autoHeight />
+        {performances.length === 0 ? (
+          <EmptyState message="No performance reviews found" />
+        ) : (
+          <DataGrid rows={performances} columns={performanceColumns} pageSize={10} rowsPerPageOptions={[10, 25, 50]} getRowId={(r) => r._id} autoHeight />
+        )}
       </TabPanel>
 
       {/* Performance Dialog */}
@@ -332,13 +421,20 @@ const ManagerDashboard = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPerfDialog(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleCreatePerformance}>Create</Button>
+          <Button variant="contained" onClick={handleCreatePerformance} disabled={perfLoading}>
+            {perfLoading ? <CircularProgress size={24} /> : 'Create'}
+          </Button>
         </DialogActions>
       </Dialog>
       {/* Add Employee Dialog */}
       <Dialog open={addEmployeeDialog} onClose={() => setAddEmployeeDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add Employee</DialogTitle>
         <DialogContent>
+          {employeeFormError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {employeeFormError}
+            </Alert>
+          )}
           <TextField fullWidth label="Name" value={employeeForm.name} onChange={(e) => setEmployeeForm({ ...employeeForm, name: e.target.value })} margin="normal" />
           <TextField fullWidth label="Email" value={employeeForm.email} onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })} margin="normal" />
           <TextField fullWidth label="Password" type="password" value={employeeForm.password} onChange={(e) => setEmployeeForm({ ...employeeForm, password: e.target.value })} margin="normal" />
@@ -358,4 +454,3 @@ const ManagerDashboard = () => {
 };
 
 export default ManagerDashboard;
-

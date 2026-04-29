@@ -25,8 +25,13 @@ const clockIn = async (req, res) => {
     tenAM.setHours(10, 0, 0, 0);
     const isLate = now > tenAM;
 
+    const position = req.body.location;
+    
     if (existing) {
-      existing.clockIn = now;
+      existing.clockIn = { 
+        time: now, 
+        location: position 
+      };
       existing.late = isLate;
       await existing.save();
       return res.json({ success: true, data: existing });
@@ -34,7 +39,10 @@ const clockIn = async (req, res) => {
 
     const attendance = await Attendance.create({
       user: req.user.id,
-      clockIn: now,
+      clockIn: { 
+        time: now, 
+        location: position 
+      },
       date: today,
       late: isLate
     });
@@ -73,7 +81,12 @@ const clockOut = async (req, res) => {
     sixPM.setHours(18, 0, 0, 0);
     const isEarly = now < sixPM;
 
-    attendance.clockOut = now;
+    const position = req.body.location;
+
+    attendance.clockOut = { 
+      time: now, 
+      location: position 
+    };
     attendance.earlyLeave = isEarly;
     await attendance.save();
 
@@ -94,20 +107,33 @@ const getAllAttendance = async (req, res) => {
     if (req.user.role === 'manager') {
       // Get manager's team members
       const teamMembers = await Employee.find({ managerId: req.user.id });
-      // Attendance.user stores User IDs, not Employee IDs.
-      // Find the corresponding User documents by email to get User IDs.
-      const teamEmails = teamMembers.map(e => e.email);
-      const User = require('../models/User');
-      const teamUsers = await User.find({ email: { $in: teamEmails } });
-      const teamUserIds = teamUsers.map(u => u._id.toString());
+      // Employee._id is aligned with User._id, so we can use it directly
+      const teamUserIds = teamMembers.map(e => e._id.toString());
       query = { user: { $in: teamUserIds } };
     }
 
-    const records = await Attendance.find(query)
-      .populate('user', 'name email role')
-      .sort({ date: -1 });
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    res.json({ success: true, count: records.length, data: records });
+    const [records, total] = await Promise.all([
+      Attendance.find(query)
+        .populate('user', 'name email role')
+        .sort({ date: -1 })
+        .skip(skip)
+        .limit(limit),
+      Attendance.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      count: records.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: records
+    });
 
   } catch (err) {
     res.status(500).json({ message: err.message });

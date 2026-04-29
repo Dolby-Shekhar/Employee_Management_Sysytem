@@ -81,12 +81,29 @@ const getAllPayrolls = async (req, res) => {
       };
     }
 
-    const payrolls = await Payroll.find(query)
-      .populate('employeeId', 'name email department position')
-      .populate('generatedBy', 'name')
-      .sort({ createdAt: -1 });
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    res.json({ success: true, count: payrolls.length, data: payrolls });
+    const [payrolls, total] = await Promise.all([
+      Payroll.find(query)
+        .populate('employeeId', 'name email department position')
+        .populate('generatedBy', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Payroll.countDocuments(query)
+    ]);
+
+    res.json({
+      success: true,
+      count: payrolls.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      data: payrolls
+    });
 
   } catch (err) {
     res.status(500).json({ message: err.message });

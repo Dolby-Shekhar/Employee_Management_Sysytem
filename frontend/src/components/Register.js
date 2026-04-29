@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Box,
@@ -11,6 +11,8 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  LinearProgress,
+  Chip,
 } from '@mui/material';
 import {
   Visibility,
@@ -33,6 +35,27 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+
+  const passwordStrength = useMemo(() => {
+    const pwd = formData.password;
+    if (!pwd) return { score: 0, label: '', color: 'error' };
+    let score = 0;
+    if (pwd.length >= 8) score += 1;
+    if (pwd.length >= 12) score += 1;
+    if (/[A-Z]/.test(pwd)) score += 1;
+    if (/[0-9]/.test(pwd)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pwd)) score += 1;
+
+    const levels = [
+      { score: 0, label: 'Too short', color: 'error' },
+      { score: 1, label: 'Weak', color: 'error' },
+      { score: 2, label: 'Fair', color: 'warning' },
+      { score: 3, label: 'Good', color: 'info' },
+      { score: 4, label: 'Strong', color: 'success' },
+      { score: 5, label: 'Very Strong', color: 'success' },
+    ];
+    return levels[score];
+  }, [formData.password]);
 
   const validate = () => {
     const errors = {};
@@ -165,6 +188,28 @@ const Register = () => {
                 ),
               }}
             />
+
+            {formData.password && (
+              <Box sx={{ mt: 0.5, mb: 1 }}>
+                <LinearProgress
+                  variant="determinate"
+                  value={(passwordStrength.score / 5) * 100}
+                  color={passwordStrength.color}
+                  sx={{ height: 6, borderRadius: 1 }}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                  <Chip
+                    label={passwordStrength.label}
+                    color={passwordStrength.color}
+                    size="small"
+                    sx={{ height: 20, fontSize: '0.7rem' }}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    {passwordStrength.score >= 3 ? 'Meets requirements' : 'Use 8+ chars with uppercase, number & symbol'}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
 
             <TextField
               fullWidth
