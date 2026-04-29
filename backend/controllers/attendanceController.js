@@ -1,6 +1,39 @@
 const Attendance = require('../models/Attendance');
 const Employee = require('../models/Employee');
 
+// Helper function to reverse geocode coordinates to address
+const reverseGeocode = async (lat, lng) => {
+  if (!lat || !lng) return null;
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      {
+        headers: {
+          'User-Agent': 'EmployeeManagementSystem/1.0'
+        }
+      }
+    );
+    const data = await response.json();
+    if (data.address) {
+      const parts = [];
+      if (data.address.city || data.address.town || data.address.village || data.address.municipality) {
+        parts.push(data.address.city || data.address.town || data.address.village || data.address.municipality);
+      }
+      if (data.address.state) {
+        parts.push(data.address.state);
+      }
+      if (data.address.country) {
+        parts.push(data.address.country);
+      }
+      return parts.join(', ') || data.display_name?.split(',').slice(0, 3).join(',');
+    }
+    return null;
+  } catch (err) {
+    console.error('Reverse geocode error:', err.message);
+    return null;
+  }
+};
+
 // @desc    Clock in
 // @route   POST /api/attendance/clock-in
 // @access  Private
@@ -71,7 +104,7 @@ const clockOut = async (req, res) => {
       return res.status(400).json({ message: 'Please clock in first' });
     }
 
-    if (attendance.clockOut) {
+    if (attendance.clockOut && attendance.clockOut.time) {
       return res.status(400).json({ message: 'Already clocked out today' });
     }
 
@@ -126,13 +159,25 @@ const getAllAttendance = async (req, res) => {
       Attendance.countDocuments(query)
     ]);
 
+    // Add addresses to each record
+    const recordsWithAddress = await Promise.all(records.map(async (record) => {
+      const clockInAddress = record.clockIn?.location ? await reverseGeocode(record.clockIn.location.lat, record.clockIn.location.lng) : null;
+      const clockOutAddress = record.clockOut?.location ? await reverseGeocode(record.clockOut.location.lat, record.clockOut.location.lng) : null;
+
+      return {
+        ...record.toObject(),
+        clockIn: record.clockIn ? { ...record.clockIn, address: clockInAddress } : null,
+        clockOut: record.clockOut ? { ...record.clockOut, address: clockOutAddress } : null
+      };
+    }));
+
     res.json({
       success: true,
       count: records.length,
       total,
       page,
       pages: Math.ceil(total / limit),
-      data: records
+      data: recordsWithAddress
     });
 
   } catch (err) {
@@ -148,7 +193,19 @@ const getMyAttendance = async (req, res) => {
     const records = await Attendance.find({ user: req.user.id })
       .sort({ date: -1 });
 
-    res.json({ success: true, count: records.length, data: records });
+    // Add addresses to each record
+    const recordsWithAddress = await Promise.all(records.map(async (record) => {
+      const clockInAddress = record.clockIn?.location ? await reverseGeocode(record.clockIn.location.lat, record.clockIn.location.lng) : null;
+      const clockOutAddress = record.clockOut?.location ? await reverseGeocode(record.clockOut.location.lat, record.clockOut.location.lng) : null;
+
+      return {
+        ...record.toObject(),
+        clockIn: record.clockIn ? { ...record.clockIn, address: clockInAddress } : null,
+        clockOut: record.clockOut ? { ...record.clockOut, address: clockOutAddress } : null
+      };
+    }));
+
+    res.json({ success: true, count: records.length, data: recordsWithAddress });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -168,7 +225,57 @@ const getTodayStatus = async (req, res) => {
       date: today
     });
 
-    res.json(record || { clockIn: null, clockOut: null, late: false, earlyLeave: false });
+    let response = record || { clockIn: null, clockOut: null, late: false, earlyLeave: false };
+
+    if (record) {
+      const clockInAddress = record.clockIn?.location ? await reverseGeocode(record.clockIn.location.lat, record.clockIn.location.lng) : null;
+      const clockOutAddress = record.clockOut?.location ? await reverseGeocode(record.clockOut.location.lat, record.clockOut.location.lng) : null;
+
+      response = {
+        ...record.toObject(),
+        clockIn: record.clockIn ? { ...record.clockIn, address: clockInAddress } : null,
+        clockOut: record.clockOut ? { ...record.clockOut, address: clockOutAddress } : null
+      };
+    }
+
+    res.json(response);
+
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// @desc    Reset today's clock out (for testing/fixing issues)
+// @route   POST /api/attendance/reset-clock-out
+// @access  Private
+const resetClockOut = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Try multiple dates to find the record (in case of timezone issues)
+    const dates = [today, new Date(today.getTime() + 86400000), new Date(today.getTime() - 86400000)];
+
+    let attendance = null;
+    for (const d of dates) {
+      attendance = await Attendance.findOne({
+        user: req.user.id,
+        date: d
+      });
+      if (attendance) break;
+    }
+
+    if (!attendance) {
+      return res.status(404).json({ message: 'No attendance record found' });
+    }
+
+    // Set clockOut.time to null to allow clocking out again
+    await Attendance.updateOne(
+      { _id: attendance._id },
+      { $set: { "clockOut.time": null, "clockOut.location": null, earlyLeave: false } }
+    );
+
+    res.json({ success: true, message: 'Clock out reset successfully' });
 
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -180,6 +287,7 @@ module.exports = {
   clockOut,
   getAllAttendance,
   getMyAttendance,
-  getTodayStatus
+  getTodayStatus,
+  resetClockOut
 };
 

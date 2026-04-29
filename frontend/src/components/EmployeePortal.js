@@ -37,12 +37,15 @@ import {
   CheckCircle,
   Schedule,
   NoteAdd,
+  OpenInNew,
+  LocationOn,
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import { toast } from 'react-toastify';
 import axiosInstance from '../utils/axiosInstance';
 import { AuthContext } from '../context/AuthContext';
 import Layout from './Layout';
+// import LocationMap from './LocationMap'; // unused
 
 const TabPanel = ({ children, value, index }) => (
   value === index && <Box sx={{ py: 2 }}>{children}</Box>
@@ -153,10 +156,10 @@ const EmployeePortal = () => {
         axiosInstance.get('/attendance/today'),
         axiosInstance.get('/reports/my'),
       ]);
-      setAttendance(attRes.data || []);
-      setLeaves(leaveRes.data || []);
-      setPayrolls(payRes.data || []);
-      setPerformances(perfRes.data || []);
+      setAttendance(attRes.data?.data || []);
+      setLeaves(leaveRes.data?.data || []);
+      setPayrolls(payRes.data?.data || []);
+      setPerformances(perfRes.data?.data || []);
       setProfile(profRes.data || {});
       setTodayStatus(todayRes.data || {});
       setReports(reportRes.data?.data || []);
@@ -168,11 +171,11 @@ const EmployeePortal = () => {
       });
 
       setStats({
-        totalLeaves: (leaveRes.data || []).length,
-        approvedLeaves: (leaveRes.data || []).filter(l => l.status === 'approved').reduce((sum, l) => sum + (l.days || 0), 0),
-        totalPayroll: (payRes.data || []).reduce((sum, p) => sum + (p.netPay || 0), 0),
-        avgScore: (perfRes.data || []).length > 0
-          ? ((perfRes.data || []).reduce((sum, p) => sum + (p.averageScore || 0), 0) / (perfRes.data || []).length).toFixed(1)
+        totalLeaves: (leaveRes.data?.data || []).length,
+        approvedLeaves: (leaveRes.data?.data || []).filter(l => l.status === 'approved').reduce((sum, l) => sum + (l.days || 0), 0),
+        totalPayroll: (payRes.data?.data || []).reduce((sum, p) => sum + (p.netPay || 0), 0),
+        avgScore: (perfRes.data?.data || []).length > 0
+          ? ((perfRes.data?.data || []).reduce((sum, p) => sum + (p.averageScore || 0), 0) / (perfRes.data?.data || []).length).toFixed(1)
           : 0,
       });
     } catch (err) {
@@ -237,6 +240,19 @@ const EmployeePortal = () => {
       fetchAllData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Clock out failed');
+    } finally {
+      setClockOutLoading(false);
+    }
+  };
+
+  const handleResetClockOut = async () => {
+    try {
+      setClockOutLoading(true);
+      await axiosInstance.post('/attendance/reset-clock-out');
+      toast.success('Clock out reset. You can now clock out again.');
+      fetchAllData();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to reset clock out');
     } finally {
       setClockOutLoading(false);
     }
@@ -322,14 +338,12 @@ const EmployeePortal = () => {
 
   const attendanceColumns = [
     { field: 'date', headerName: 'Date', width: 120, valueGetter: (p) => p?.value ? new Date(p.value).toLocaleDateString() : "-" },
-    { field: 'clockIn', headerName: 'Clock In', width: 120, renderCell: (p) => p?.row?.clockIn?.time ? new Date(p?.row?.clockIn?.time).toLocaleTimeString() : '-' },
-    { field: 'clockOut', headerName: 'Clock Out', width: 120, renderCell: (p) => p?.row?.clockOut?.time ? new Date(p?.row?.clockOut?.time).toLocaleTimeString() : '-' },
+    { field: 'clockIn', headerName: 'Clock In', width: 160, renderCell: (p) => p?.row?.clockIn?.time ? new Date(p?.row?.clockIn?.time).toLocaleString() : '-' },
+    { field: 'clockOut', headerName: 'Clock Out', width: 160, renderCell: (p) => p?.row?.clockOut?.time ? new Date(p?.row?.clockOut?.time).toLocaleString() : '-' },
     { field: 'late', headerName: 'Late', width: 80, renderCell: (p) => <Chip label={p?.value ? 'Yes' : 'No'} color={p?.value ? 'error' : 'success'} size="small" /> },
     { field: 'earlyLeave', headerName: 'Early', width: 80, renderCell: (p) => <Chip label={p?.value ? 'Yes' : 'No'} color={p?.value ? 'warning' : 'success'} size="small" /> },
-    { field: 'location', headerName: 'Location', width: 150, renderCell: (p) => {
-      const loc = p?.row?.clockIn?.location;
-      return loc ? `${loc.lat?.toFixed(4)}, ${loc.lng?.toFixed(4)}` : 'N/A';
-    }},
+    { field: 'clockInLoc', headerName: 'Clock In Location', width: 220, renderCell: (p) => p?.row?.clockIn?.address || (p?.row?.clockIn?.location ? `${p?.row?.clockIn?.location?.lat?.toFixed(6)}, ${p?.row?.clockIn?.location?.lng?.toFixed(6)}` : '-') },
+    { field: 'clockOutLoc', headerName: 'Clock Out Location', width: 220, renderCell: (p) => p?.row?.clockOut?.address || (p?.row?.clockOut?.location ? `${p?.row?.clockOut?.location?.lat?.toFixed(6)}, ${p?.row?.clockOut?.location?.lng?.toFixed(6)}` : '-') },
   ];
 
   const payrollColumns = [
@@ -401,24 +415,59 @@ const EmployeePortal = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Chip
                 icon={<CheckCircle />}
-                label={todayStatus?.clockIn ? 'Clocked In: ' + new Date(todayStatus.clockIn).toLocaleTimeString() : 'Not Clocked In'}
-                color={todayStatus?.clockIn ? 'success' : 'default'}
+                label={todayStatus?.clockIn?.time ? 'Clocked In: ' + new Date(todayStatus.clockIn.time).toLocaleString() : 'Not Clocked In'}
+                color={todayStatus?.clockIn?.time ? 'success' : 'default'}
               />
               <Chip
                 icon={<Schedule />}
-                label={todayStatus?.clockOut ? 'Clocked Out: ' + new Date(todayStatus.clockOut).toLocaleTimeString() : 'Not Clocked Out'}
-                color={todayStatus?.clockOut ? 'success' : 'default'}
+                label={todayStatus?.clockOut?.time ? 'Clocked Out: ' + new Date(todayStatus.clockOut.time).toLocaleString() : 'Not Clocked Out'}
+                color={todayStatus?.clockOut?.time ? 'success' : 'default'}
               />
               {todayStatus?.late && <Chip label="Late" color="error" size="small" />}
               {todayStatus?.earlyLeave && <Chip label="Early Leave" color="warning" size="small" />}
             </Box>
+            {(todayStatus?.clockIn?.location || todayStatus?.clockOut?.location) && (
+              <Box sx={{ mt: 2, p: 1.5, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                {todayStatus?.clockIn?.address ? (
+                  <Typography variant="body2">
+                    <LocationOn fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                    Clocked in at {todayStatus?.clockIn?.address}
+                  </Typography>
+                ) : (
+                  <Typography variant="body2">
+                    <LocationOn fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+                    Clocked in at lat {todayStatus?.clockIn?.location?.lat?.toFixed(6)}, lng {todayStatus?.clockIn?.location?.lng?.toFixed(6)}
+                  </Typography>
+                )}
+                {todayStatus?.clockOut?.location && (
+                  <Typography variant="body2" sx={{ mt: 1 }}>
+                    {todayStatus?.clockOut?.address ? (
+                      <>
+                        <LocationOn fontSize="small" sx={{ verticalAlign: 'middleware', mr: 0.5 }} />
+                        Clocked out at {todayStatus?.clockOut?.address}
+                      </>
+                    ) : (
+                      <>
+                        <LocationOn fontSize="small" sx={{ verticalAlign: 'middleware', mr: 0.5 }} />
+                        Clocked out at lat {todayStatus?.clockOut?.location?.lat?.toFixed(6)}, lng {todayStatus?.clockOut?.location?.lng?.toFixed(6)}
+                      </>
+                    )}
+                  </Typography>
+                )}
+              </Box>
+            )}
             <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
-              <Button variant="contained" color="success" onClick={handleClockIn} disabled={todayStatus?.clockIn || clockInLoading}>
+              <Button variant="contained" color="success" onClick={handleClockIn} disabled={todayStatus?.clockIn?.time || clockInLoading}>
                 {clockInLoading ? <CircularProgress size={20} /> : 'Clock In'}
               </Button>
-              <Button variant="contained" color="warning" onClick={handleClockOut} disabled={!todayStatus?.clockIn || todayStatus?.clockOut || clockOutLoading}>
+              <Button variant="contained" color="warning" onClick={handleClockOut} disabled={!todayStatus?.clockIn?.time || todayStatus?.clockOut?.time || clockOutLoading}>
                 {clockOutLoading ? <CircularProgress size={20} /> : 'Clock Out'}
               </Button>
+              {(todayStatus?.clockOut?.time || todayStatus?.clockOut) && (
+                <Button variant="outlined" color="error" size="small" onClick={handleResetClockOut}>
+                  Reset Clock Out
+                </Button>
+              )}
             </Box>
           </CardContent>
         </Card>

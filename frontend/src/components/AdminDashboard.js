@@ -27,14 +27,29 @@ const TabPanel = ({ children, value, index }) => (
 );
 
 const StatsCard = ({ title, value, icon, color }) => (
-  <Card>
+  <Card sx={{
+    transition: 'all 0.3s ease',
+    '&:hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: 6,
+    }
+  }}>
     <CardContent>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
           <Typography color="text.secondary">{title}</Typography>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>{value}</Typography>
         </Box>
-        <Box sx={{ color: `${color}.main`, bgcolor: `${color}.light`, p: 1.5, borderRadius: 2 }}>
+        <Box sx={{
+          color: '#fff',
+          bgcolor: color === 'primary' ? '#1976d2' : color === 'warning' ? '#ed6c02' : color === 'success' ? '#2e7d32' : '#0288d1',
+          p: 1.5,
+          borderRadius: 2,
+          background: color === 'primary' ? 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)' :
+                     color === 'warning' ? 'linear-gradient(135deg, #ed6c02 0%, #ff9800 100%)' :
+                     color === 'success' ? 'linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)' :
+                     'linear-gradient(135deg, #0288d1 0%, #03a9f4 100%)'
+        }}>
           {icon}
         </Box>
       </Box>
@@ -603,6 +618,8 @@ const AdminDashboard = () => {
                   <TableCell>Clock Out</TableCell>
                   <TableCell>Late</TableCell>
                   <TableCell>Early Leave</TableCell>
+                  <TableCell>Clock In Location</TableCell>
+                  <TableCell>Clock Out Location</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -610,14 +627,16 @@ const AdminDashboard = () => {
                   <TableRow key={a._id}>
                     <TableCell>{a.user?.name}</TableCell>
                     <TableCell>{a.date ? new Date(a.date).toLocaleDateString() : '-'}</TableCell>
-                    <TableCell>{a.clockIn ? new Date(a.clockIn).toLocaleTimeString() : '-'}</TableCell>
-                    <TableCell>{a.clockOut ? new Date(a.clockOut).toLocaleTimeString() : '-'}</TableCell>
+                    <TableCell>{a.clockIn?.time ? new Date(a.clockIn.time).toLocaleString() : '-'}</TableCell>
+                    <TableCell>{a.clockOut?.time ? new Date(a.clockOut.time).toLocaleString() : '-'}</TableCell>
                     <TableCell>
                       <Chip label={a.late ? 'Yes' : 'No'} color={a.late ? 'error' : 'success'} size="small" />
                     </TableCell>
                     <TableCell>
                       <Chip label={a.earlyLeave ? 'Yes' : 'No'} color={a.earlyLeave ? 'warning' : 'success'} size="small" />
                     </TableCell>
+                    <TableCell>{a.clockIn?.address || (a.clockIn?.location ? `${a.clockIn?.location?.lat?.toFixed(6)}, ${a.clockIn?.location?.lng?.toFixed(6)}` : '-')}</TableCell>
+                    <TableCell>{a.clockOut?.address || (a.clockOut?.location ? `${a.clockOut?.location?.lat?.toFixed(6)}, ${a.clockOut?.location?.lng?.toFixed(6)}` : '-')}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

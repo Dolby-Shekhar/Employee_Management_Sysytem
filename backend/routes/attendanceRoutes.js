@@ -5,7 +5,8 @@ const {
   clockOut,
   getAllAttendance,
   getMyAttendance,
-  getTodayStatus
+  getTodayStatus,
+  resetClockOut
 } = require('../controllers/attendanceController');
 const authMiddleware = require('../middleware/authMiddleware');
 const managerMiddleware = require('../middleware/managerMiddleware');
@@ -16,6 +17,7 @@ router.use(authMiddleware);
 // Clock in/out
 router.post('/clock-in', clockIn);
 router.post('/clock-out', clockOut);
+router.post('/reset-clock-out', resetClockOut);
 
 // Get my attendance
 router.get('/my', getMyAttendance);

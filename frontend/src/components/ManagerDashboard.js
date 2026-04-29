@@ -330,14 +330,12 @@ const ManagerDashboard = () => {
   const attendanceColumns = [
     { field: 'user', headerName: 'Employee', width: 150, renderCell: (p) => p?.row?.user?.name || p?.row?.employeeId?.name || '-' },
     { field: 'date', headerName: 'Date', width: 120, valueGetter: (p) => p?.value ? new Date(p?.value).toLocaleDateString() : "-" },
-    { field: 'clockIn', headerName: 'Clock In', width: 120, renderCell: (p) => p?.row?.clockIn?.time ? new Date(p?.row?.clockIn?.time).toLocaleTimeString() : '-' },
-    { field: 'clockOut', headerName: 'Clock Out', width: 120, renderCell: (p) => p?.row?.clockOut?.time ? new Date(p?.row?.clockOut?.time).toLocaleTimeString() : '-' },
+    { field: 'clockIn', headerName: 'Clock In', width: 160, renderCell: (p) => p?.row?.clockIn?.time ? new Date(p?.row?.clockIn?.time).toLocaleString() : '-' },
+    { field: 'clockOut', headerName: 'Clock Out', width: 160, renderCell: (p) => p?.row?.clockOut?.time ? new Date(p?.row?.clockOut?.time).toLocaleString() : '-' },
     { field: 'late', headerName: 'Late', width: 80, renderCell: (p) => <Chip label={p?.value ? 'Yes' : 'No'} color={p?.value ? 'error' : 'success'} size="small" /> },
     { field: 'earlyLeave', headerName: 'Early Leave', width: 100, renderCell: (p) => <Chip label={p?.value ? 'Yes' : 'No'} color={p?.value ? 'warning' : 'success'} size="small" /> },
-    { field: 'location', headerName: 'Location', width: 150, renderCell: (p) => {
-      const loc = p?.row?.clockIn?.location;
-      return loc ? `${loc.lat?.toFixed(4)}, ${loc.lng?.toFixed(4)}` : 'N/A';
-    }},
+    { field: 'clockInLoc', headerName: 'Clock In Location', width: 220, renderCell: (p) => p?.row?.clockIn?.address || (p?.row?.clockIn?.location ? `${p?.row?.clockIn?.location?.lat?.toFixed(6)}, ${p?.row?.clockIn?.location?.lng?.toFixed(6)}` : '-') },
+    { field: 'clockOutLoc', headerName: 'Clock Out Location', width: 220, renderCell: (p) => p?.row?.clockOut?.address || (p?.row?.clockOut?.location ? `${p?.row?.clockOut?.location?.lat?.toFixed(6)}, ${p?.row?.clockOut?.location?.lng?.toFixed(6)}` : '-') },
   ];
 
   const performanceColumns = [
