@@ -38,7 +38,8 @@ import {
   AccessTime,
   EventNote,
   Assessment,
-  AccountCircle
+  AccountCircle,
+  Description
 } from '@mui/icons-material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { DataGrid } from '@mui/x-data-grid';
@@ -75,6 +76,7 @@ const pathToTab = {
   '/manager-dashboard/attendance': 2,
   '/manager-dashboard/leave-approvals': 3,
   '/manager-dashboard/performance': 4,
+  '/manager-dashboard/reports': 5,
 };
 
 const tabToPath = [
@@ -83,6 +85,7 @@ const tabToPath = [
   '/manager-dashboard/attendance',
   '/manager-dashboard/leave-approvals',
   '/manager-dashboard/performance',
+  '/manager-dashboard/reports',
 ];
 
 const ManagerDashboard = () => {
@@ -94,6 +97,7 @@ const ManagerDashboard = () => {
   const [attendance, setAttendance] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [performances, setPerformances] = useState([]);
+  const [reports, setReports] = useState([]);
   const [stats, setStats] = useState({ teamSize: 0, pendingLeaves: 0, todayAttendance: 0, avgPerformance: 0 });
 
   const [perfDialog, setPerfDialog] = useState(false);
@@ -120,16 +124,18 @@ const ManagerDashboard = () => {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [teamRes, attRes, leaveRes, perfRes] = await Promise.all([
+      const [teamRes, attRes, leaveRes, perfRes, reportRes] = await Promise.all([
         axiosInstance.get('/employees'),
         axiosInstance.get('/attendance/all'),
         axiosInstance.get('/leaves/approval'),
         axiosInstance.get('/performance/team'),
+        axiosInstance.get('/reports/team'),
       ]);
       setTeam(teamRes.data);
       setAttendance(attRes.data);
       setLeaves(leaveRes.data);
       setPerformances(perfRes.data);
+      setReports(reportRes.data?.data || []);
 
       const today = new Date().toISOString().split('T')[0];
       setStats({
@@ -235,9 +241,11 @@ const ManagerDashboard = () => {
   const attendanceColumns = [
     { field: 'user.name', headerName: 'Employee', width: 150, valueGetter: (p) => p?.row?.user?.name || "-" },
     { field: 'date', headerName: 'Date', width: 120, valueGetter: (p) => p?.value ? new Date(p?.value).toLocaleDateString() : "-" },
-    { field: 'clockIn', headerName: 'Clock In', width: 120, valueGetter: (p) => p?.value ? new Date(p?.value).toLocaleTimeString() : '-' },
-    { field: 'clockOut', headerName: 'Clock Out', width: 120, valueGetter: (p) => p?.value ? new Date(p?.value).toLocaleTimeString() : '-' },
+    { field: 'clockIn.time', headerName: 'Clock In', width: 120, valueGetter: (p) => p?.row?.clockIn?.time ? new Date(p?.row?.clockIn?.time).toLocaleTimeString() : '-' },
+    { field: 'clockOut.time', headerName: 'Clock Out', width: 120, valueGetter: (p) => p?.row?.clockOut?.time ? new Date(p?.row?.clockOut?.time).toLocaleTimeString() : '-' },
     { field: 'late', headerName: 'Late', width: 80, renderCell: (p) => <Chip label={p?.value ? 'Yes' : 'No'} color={p?.value ? 'error' : 'success'} size="small" /> },
+    { field: 'earlyLeave', headerName: 'Early Leave', width: 100, renderCell: (p) => <Chip label={p?.value ? 'Yes' : 'No'} color={p?.value ? 'warning' : 'success'} size="small" /> },
+    { field: 'clockIn.location', headerName: 'Location', width: 150, valueGetter: (p) => p?.row?.clockIn?.location ? `${p?.row?.clockIn?.location?.lat}, ${p?.row?.clockIn?.location?.lng}` : 'N/A' },
   ];
 
   const performanceColumns = [
@@ -266,6 +274,7 @@ const ManagerDashboard = () => {
         <Tab label="Attendance" />
         <Tab label="Leave Approvals" />
         <Tab label="Performance" />
+        <Tab label="Reports" />
       </Tabs>
 
       {/* Overview */}
@@ -375,6 +384,58 @@ const ManagerDashboard = () => {
           <EmptyState message="No performance reviews found" />
         ) : (
           <DataGrid rows={performances} columns={performanceColumns} pageSize={10} rowsPerPageOptions={[10, 25, 50]} getRowId={(r) => r._id} autoHeight />
+        )}
+      </TabPanel>
+
+      {/* Reports */}
+      <TabPanel value={tab} index={5}>
+        {reports.length === 0 ? (
+          <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+            No reports received from team members yet.
+          </Typography>
+        ) : (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Employee</TableCell>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Content</TableCell>
+                  <TableCell>Priority</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Date</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {reports.map((report) => (
+                  <TableRow key={report._id}>
+                    <TableCell>{report.employeeId?.name || 'Unknown'}</TableCell>
+                    <TableCell>{report.title}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {report.content}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={report.priority}
+                        color={report.priority === 'high' ? 'error' : report.priority === 'medium' ? 'warning' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={report.status}
+                        color={report.status === 'sent' ? 'info' : report.status === 'read' ? 'success' : report.status === 'actioned' ? 'primary' : 'default'}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>{new Date(report.createdAt).toLocaleDateString()}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </TabPanel>
 

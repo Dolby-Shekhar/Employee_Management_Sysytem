@@ -190,13 +190,19 @@ const EmployeePortal = () => {
 
   const handleClockIn = async () => {
     try {
-      const position = await getCurrentLocation();
+      let position = null;
+      try {
+        position = await getCurrentLocation();
+      } catch (geoErr) {
+        // Geolocation failed, proceed without location
+        console.log('Location not available, proceeding without location');
+      }
       setClockInLoading(true);
       await axiosInstance.post('/attendance/clock-in', { location: position });
       toast.success('Clocked in successfully');
       fetchAllData();
     } catch (err) {
-      toast.error(err.message === 'Geolocation not supported' ? 'Location access required' : err.response?.data?.message || 'Clock in failed');
+      toast.error(err.response?.data?.message || 'Clock in failed');
     } finally {
       setClockInLoading(false);
     }
@@ -204,13 +210,19 @@ const EmployeePortal = () => {
 
   const handleClockOut = async () => {
     try {
-      const position = await getCurrentLocation();
+      let position = null;
+      try {
+        position = await getCurrentLocation();
+      } catch (geoErr) {
+        // Geolocation failed, proceed without location
+        console.log('Location not available, proceeding without location');
+      }
       setClockOutLoading(true);
       await axiosInstance.post('/attendance/clock-out', { location: position });
       toast.success('Clocked out successfully');
       fetchAllData();
     } catch (err) {
-      toast.error(err.message === 'Geolocation not supported' ? 'Location access required' : err.response?.data?.message || 'Clock out failed');
+      toast.error(err.response?.data?.message || 'Clock out failed');
     } finally {
       setClockOutLoading(false);
     }
