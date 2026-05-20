@@ -1,0 +1,17 @@
+services:
+  - type: web_service
+    name: employee-management
+    env: node
+    plan: free
+    branch: main
+    root: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_EXPIRE
+        value: 7d
+      - key: RATE_LIMIT_MAX
+        value: 100

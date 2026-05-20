@@ -8,73 +8,136 @@ const getDesignTokens = (mode) => ({
   palette: {
     mode,
     primary: {
-      main: mode === 'light' ? '#1976d2' : '#90caf9',
-      light: mode === 'light' ? '#42a5f5' : '#e3f2fd',
-      dark: mode === 'light' ? '#1565c0' : '#42a5f5',
+      main: mode === 'light' ? '#4f46e5' : '#8b5cf6',
+      light: mode === 'light' ? '#818cf8' : '#a78bfa',
+      dark: mode === 'light' ? '#4338ca' : '#6366f1',
     },
     secondary: {
-      main: mode === 'light' ? '#dc004e' : '#f48fb1',
-      light: mode === 'light' ? '#ff5983' : '#fce4ec',
-      dark: mode === 'light' ? '#9a0036' : '#c2185b',
+      main: mode === 'light' ? '#ec4899' : '#f9a8d4',
+      light: mode === 'light' ? '#fb7185' : '#fda4af',
+      dark: mode === 'light' ? '#be185d' : '#c026d3',
     },
     background: {
-      default: mode === 'light' ? '#f5f5f5' : '#121212',
-      paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
-    },
-    success: {
-      main: mode === 'light' ? '#2e7d32' : '#66bb6a',
-      light: mode === 'light' ? '#4caf50' : '#81c784',
-      dark: mode === 'light' ? '#1b5e20' : '#388e3c',
-    },
-    warning: {
-      main: mode === 'light' ? '#ed6c02' : '#ffa726',
-      light: mode === 'light' ? '#ff9800' : '#ffb74d',
-      dark: mode === 'light' ? '#e65100' : '#f57c00',
-    },
-    error: {
-      main: mode === 'light' ? '#d32f2f' : '#ef5350',
-      light: mode === 'light' ? '#ef5350' : '#e57373',
-      dark: mode === 'light' ? '#c62828' : '#d32f2f',
-    },
-    info: {
-      main: mode === 'light' ? '#0288d1' : '#29b6f6',
-      light: mode === 'light' ? '#03a9f4' : '#4fc3f7',
-      dark: mode === 'light' ? '#01579b' : '#0288d1',
+      default: mode === 'light' ? '#eef2ff' : '#0b1220',
+      paper: mode === 'light' ? '#ffffff' : '#111827',
     },
     text: {
-      primary: mode === 'light' ? 'rgba(0,0,0,0.87)' : '#ffffff',
-      secondary: mode === 'light' ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.7)',
+      primary: mode === 'light' ? 'rgba(15,23,42,0.92)' : '#f8fafc',
+      secondary: mode === 'light' ? 'rgba(71,85,105,0.78)' : 'rgba(226,232,240,0.72)',
     },
+    divider: mode === 'light' ? 'rgba(148,163,184,0.24)' : 'rgba(226,232,240,0.12)',
   },
   typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h4: { fontWeight: 600 },
-    h5: { fontWeight: 600 },
-    h6: { fontWeight: 600 },
+    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+    h4: { fontWeight: 700 },
+    h5: { fontWeight: 700 },
+    h6: { fontWeight: 700 },
+    button: { textTransform: 'none' },
   },
   shape: {
-    borderRadius: 8,
+    borderRadius: 16,
   },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          color: mode === 'light' ? '#0f172a' : '#e2e8f0',
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: mode === 'light' ? '#ffffffcc' : '#0f172aee',
+          backdropFilter: 'blur(14px)',
+          borderBottom: `1px solid ${mode === 'light' ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.08)'}`,
+          boxShadow: 'none',
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
         root: {
           textTransform: 'none',
-          fontWeight: 600,
+          fontWeight: 700,
+          borderRadius: 12,
+          transition: 'all 0.2s ease',
+          boxShadow: 'none',
+          '&:hover': {
+            transform: 'translateY(-1px)',
+          },
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: mode === 'light' ? '0 2px 8px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.3)',
+          borderRadius: 20,
+          boxShadow:
+            mode === 'light'
+              ? '0 20px 60px rgba(15,23,42,0.08)'
+              : '0 20px 60px rgba(0,0,0,0.32)',
         },
       },
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          boxShadow: mode === 'light' ? '0 2px 8px rgba(0,0,0,0.1)' : '0 2px 8px rgba(0,0,0,0.3)',
+          borderRadius: 18,
+          boxShadow:
+            mode === 'light'
+              ? '0 14px 45px rgba(15,23,42,0.06)'
+              : '0 14px 45px rgba(0,0,0,0.35)',
+        },
+      },
+    },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: 14,
+          backgroundColor: mode === 'light' ? '#ffffff' : '#161b2d',
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: mode === 'light' ? 'rgba(15,23,42,0.16)' : 'rgba(226,232,240,0.12)',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: mode === 'light' ? 'rgba(79,70,229,0.35)' : 'rgba(139,92,246,0.32)',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#7c3aed',
+          },
+        },
+      },
+    },
+    MuiInputLabel: {
+      styleOverrides: {
+        root: {
+          color: mode === 'light' ? 'rgba(15,23,42,0.7)' : 'rgba(226,232,240,0.75)',
+        },
+      },
+    },
+    MuiTabs: {
+      styleOverrides: {
+        indicator: {
+          height: 4,
+          borderRadius: 4,
+          background: 'linear-gradient(90deg, #4f46e5 0%, #ec4899 100%)',
+        },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+          fontWeight: 700,
+          minHeight: 48,
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: mode === 'light' ? '#f8fbff' : '#111827',
+          borderRight: `1px solid ${mode === 'light' ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.06)'}`,
         },
       },
     },
@@ -101,7 +164,10 @@ export const CustomThemeProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    document.body.style.backgroundColor = mode === 'dark' ? '#121212' : '#f5f5f5';
+    document.body.style.background =
+      mode === 'dark'
+        ? 'radial-gradient(circle at top, rgba(99,102,241,0.16), transparent 28%), radial-gradient(circle at 80% 20%, rgba(236,72,153,0.1), transparent 24%), #030712'
+        : 'radial-gradient(circle at top, rgba(79,70,229,0.14), transparent 30%), radial-gradient(circle at 80% 20%, rgba(236,72,153,0.1), transparent 28%), #eff6ff';
   }, [mode]);
 
   const theme = useMemo(() => createTheme(getDesignTokens(mode)), [mode]);

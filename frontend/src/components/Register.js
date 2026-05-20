@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -104,151 +104,182 @@ const Register = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundImage: 'url(/login-pattern.jpg)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        background: 'radial-gradient(circle at top, rgba(79,70,229,0.18), transparent 32%), radial-gradient(circle at 85% 15%, rgba(236,72,153,0.14), transparent 26%), linear-gradient(180deg, #eff6ff 0%, #f8fafc 100%)',
         p: 2,
       }}
     >
-      <Card sx={{ maxWidth: 420, width: '100%', boxShadow: '0 8px 32px rgba(0,0,0,0.2)' }}>
-        <CardContent sx={{ p: 4 }}>
-          <Typography variant="h4" align="center" sx={{ fontWeight: 700, mb: 0.5 }}>
-            Create Account
-          </Typography>
-          <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
-            Register as an Employee
-          </Typography>
+      <Card sx={{ width: '100%', maxWidth: 1000, borderRadius: 4, overflow: 'hidden', boxShadow: '0 28px 80px rgba(15,23,42,0.12)' }}>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' } }}>
+          <Box
+            sx={{
+              flex: 1,
+              p: 5,
+              background: 'linear-gradient(180deg, rgba(79,70,229,0.95), rgba(236,72,153,0.85))',
+              color: '#fff',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: 2,
+            }}
+          >
+            <Typography variant="h3" sx={{ fontWeight: 700, lineHeight: 1.05 }}>
+              Create your account
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.88)', maxWidth: 420 }}>
+              Register as an employee and start tracking attendance, leave requests, payroll statements, and performance insights.
+            </Typography>
+            <Box sx={{ display: 'grid', gap: 1, mt: 2 }}>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.82)' }}>
+                • Easy signup with built-in security
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.82)' }}>
+                • Strong password feedback
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.82)' }}>
+                • Designed for productivity
+              </Typography>
+            </Box>
+          </Box>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+          <CardContent sx={{ flex: 1, p: { xs: 4, md: 5 }, backgroundColor: 'background.paper' }}>
+            <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+              Register as Employee
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Fill in the details below to get started.
+            </Typography>
 
-          <Box component="form" onSubmit={handleSubmit} noValidate>
-            <TextField
-              fullWidth
-              label="Full Name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              error={!!fieldErrors.name}
-              helperText={fieldErrors.name}
-              margin="normal"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Person color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <TextField
-              fullWidth
-              label="Email Address"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              error={!!fieldErrors.email}
-              helperText={fieldErrors.email}
-              margin="normal"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Email color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            <TextField
-              fullWidth
-              label="Password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              value={formData.password}
-              onChange={handleChange}
-              error={!!fieldErrors.password}
-              helperText={fieldErrors.password}
-              margin="normal"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock color="action" />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-
-            {formData.password && (
-              <Box sx={{ mt: 0.5, mb: 1 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={(passwordStrength.score / 5) * 100}
-                  color={passwordStrength.color}
-                  sx={{ height: 6, borderRadius: 1 }}
-                />
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
-                  <Chip
-                    label={passwordStrength.label}
-                    color={passwordStrength.color}
-                    size="small"
-                    sx={{ height: 20, fontSize: '0.7rem' }}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    {passwordStrength.score >= 3 ? 'Meets requirements' : 'Use 8+ chars with uppercase, number & symbol'}
-                  </Typography>
-                </Box>
-              </Box>
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
             )}
 
-            <TextField
-              fullWidth
-              label="Confirm Password"
-              name="confirmPassword"
-              type={showPassword ? 'text' : 'password'}
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              error={!!fieldErrors.confirmPassword}
-              helperText={fieldErrors.confirmPassword}
-              margin="normal"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Lock color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
+            <Box component="form" onSubmit={handleSubmit} noValidate>
+              <TextField
+                fullWidth
+                label="Full Name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                error={!!fieldErrors.name}
+                helperText={fieldErrors.name}
+                margin="normal"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Person color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
 
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={loading}
-              sx={{ mt: 3, mb: 2, py: 1.2 }}
-            >
-              {loading ? <CircularProgress size={24} /> : 'Register as Employee'}
-            </Button>
+              <TextField
+                fullWidth
+                label="Email Address"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                error={!!fieldErrors.email}
+                helperText={fieldErrors.email}
+                margin="normal"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Email color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
 
-            <Typography variant="body2" align="center">
-              Already have an account?{' '}
-              <Link to="/" style={{ color: '#1976d2', textDecoration: 'none', fontWeight: 600 }}>
-                Sign in here
-              </Link>
-            </Typography>
-          </Box>
-        </CardContent>
+              <TextField
+                fullWidth
+                label="Password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.password}
+                onChange={handleChange}
+                error={!!fieldErrors.password}
+                helperText={fieldErrors.password}
+                margin="normal"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock color="action" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              {formData.password && (
+                <Box sx={{ mt: 0.5, mb: 1 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={(passwordStrength.score / 5) * 100}
+                    color={passwordStrength.color}
+                    sx={{ height: 6, borderRadius: 1 }}
+                  />
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                    <Chip
+                      label={passwordStrength.label}
+                      color={passwordStrength.color}
+                      size="small"
+                      sx={{ height: 20, fontSize: '0.7rem' }}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                      {passwordStrength.score >= 3 ? 'Meets requirements' : 'Use 8+ chars with uppercase, number & symbol'}
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                name="confirmPassword"
+                type={showPassword ? 'text' : 'password'}
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                error={!!fieldErrors.confirmPassword}
+                helperText={fieldErrors.confirmPassword}
+                margin="normal"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Lock color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled={loading}
+                sx={{ mt: 3, mb: 2, py: 1.4, background: 'linear-gradient(135deg, #4f46e5 0%, #ec4899 100%)' }}
+              >
+                {loading ? <CircularProgress size={24} /> : 'Register as Employee'}
+              </Button>
+
+              <Typography variant="body2" align="center">
+                Already have an account?{' '}
+                <RouterLink to="/" style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 600 }}>
+                  Sign in here
+                </RouterLink>
+              </Typography>
+            </Box>
+          </CardContent>
+        </Box>
       </Card>
     </Box>
   );

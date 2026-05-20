@@ -13,9 +13,23 @@ const app = express();
 
 // Security middleware
 app.use(helmet({ contentSecurityPolicy: false }));
+const frontendOrigin = process.env.FRONTEND_URL;
+const allowedOrigins = [];
+if (frontendOrigin) allowedOrigins.push(frontendOrigin);
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:3000');
+}
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "*",
-  credentials: true
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS policy blocked origin: ${origin}`));
+  },
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 }));
 
 // Request logging

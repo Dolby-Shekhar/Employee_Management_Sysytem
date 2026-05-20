@@ -52,11 +52,9 @@ const Header = ({ onDrawerToggle }) => {
     else navigate('/dashboard');
   };
 
-  // Build breadcrumb from pathname
   const getBreadcrumbs = () => {
-    const path = location.pathname;
-    const parts = path.split('/').filter(Boolean);
-    if (parts.length === 0) return [{ label: 'Login', path: '/' }];
+    const parts = location.pathname.split('/').filter(Boolean);
+    if (!parts.length) return [{ label: 'Home', path: '/' }];
 
     const crumbs = [];
     let currentPath = '';
@@ -77,13 +75,16 @@ const Header = ({ onDrawerToggle }) => {
 
   return (
     <AppBar
-      position="static"
+      position="sticky"
       elevation={0}
       sx={{
         bgcolor: 'background.paper',
         color: 'text.primary',
         borderRadius: 2,
         mb: 2,
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
       }}
     >
       <Toolbar sx={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
@@ -97,15 +98,19 @@ const Header = ({ onDrawerToggle }) => {
             <MenuIcon />
           </IconButton>
           <DashboardIcon color="primary" sx={{ display: { xs: 'none', sm: 'block' } }} />
-          <Typography variant="h6" sx={{ fontWeight: 700, display: { xs: 'none', sm: 'block' } }}>
-            EMS
-          </Typography>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, display: { xs: 'none', sm: 'block' } }}>
+              EMS
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+              {user?.role ? `${user.role.charAt(0).toUpperCase() + user.role.slice(1)} Portal` : 'Employee Management'}
+            </Typography>
+          </Box>
         </Box>
 
-        {/* Breadcrumb */}
         <Box sx={{ flexGrow: 1, mx: 2, display: { xs: 'none', md: 'flex' } }}>
-          <Breadcrumbs aria-label="breadcrumb" sx={{ '& .MuiBreadcrumbs-li': { fontSize: '0.875rem' } }}>
-            {breadcrumbs.map((crumb, idx) => (
+          <Breadcrumbs aria-label="breadcrumb" sx={{ '& .MuiBreadcrumbs-li': { fontSize: '0.9rem' } }}>
+            {breadcrumbs.map((crumb, idx) =>
               idx === breadcrumbs.length - 1 ? (
                 <Typography key={idx} color="text.primary" sx={{ fontWeight: 600 }}>
                   {crumb.label}
@@ -116,25 +121,26 @@ const Header = ({ onDrawerToggle }) => {
                   underline="hover"
                   color="inherit"
                   href={crumb.path}
-                  onClick={(e) => { e.preventDefault(); navigate(crumb.path); }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(crumb.path);
+                  }}
                   sx={{ cursor: 'pointer' }}
                 >
                   {crumb.label}
                 </MuiLink>
               )
-            ))}
+            )}
           </Breadcrumbs>
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          {/* Dark Mode Toggle */}
           <Tooltip title={mode === 'light' ? 'Dark mode' : 'Light mode'}>
             <IconButton color="inherit" onClick={toggleTheme}>
               {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>
           </Tooltip>
 
-          {/* Notification Bell */}
           <Tooltip title="Notifications">
             <IconButton color="inherit" onClick={handleNotifOpen}>
               <Badge badgeContent={0} color="error">
@@ -143,12 +149,7 @@ const Header = ({ onDrawerToggle }) => {
             </IconButton>
           </Tooltip>
 
-          <Menu
-            anchorEl={notifAnchorEl}
-            open={Boolean(notifAnchorEl)}
-            onClose={handleNotifClose}
-            PaperProps={{ sx: { width: 320, maxHeight: 400 } }}
-          >
+          <Menu anchorEl={notifAnchorEl} open={Boolean(notifAnchorEl)} onClose={handleNotifClose} PaperProps={{ sx: { width: 320, maxHeight: 400 } }}>
             <MenuItem disabled>
               <Typography variant="body2" color="text.secondary">
                 No new notifications
@@ -156,13 +157,14 @@ const Header = ({ onDrawerToggle }) => {
             </MenuItem>
           </Menu>
 
-          {/* User Chip + Avatar */}
-          <Chip
-            label={user?.role?.toUpperCase()}
-            color="primary"
-            size="small"
-            sx={{ fontWeight: 600, display: { xs: 'none', sm: 'flex' } }}
-          />
+          <Chip label={user?.role?.toUpperCase()} size="small" sx={{
+            fontWeight: 700,
+            display: { xs: 'none', sm: 'flex' },
+            background: 'linear-gradient(90deg, rgba(79,70,229,0.12), rgba(236,72,153,0.08))',
+            color: 'text.primary',
+            borderRadius: 1.5,
+            px: 1,
+          }} />
 
           <Box
             sx={{
@@ -177,7 +179,7 @@ const Header = ({ onDrawerToggle }) => {
             }}
             onClick={handleMenuOpen}
           >
-            <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main', fontSize: '0.875rem' }}>
+            <Avatar sx={{ width: 36, height: 36, bgcolor: 'transparent', backgroundImage: 'linear-gradient(135deg,#4f46e5 0%,#ec4899 100%)', color: '#fff', fontSize: '0.9rem' }}>
               {user?.name?.charAt(0)?.toUpperCase() || 'U'}
             </Avatar>
             <Typography variant="body2" sx={{ fontWeight: 500, display: { xs: 'none', sm: 'block' } }}>
@@ -185,15 +187,9 @@ const Header = ({ onDrawerToggle }) => {
             </Typography>
           </Box>
 
-          {/* User Dropdown Menu */}
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-            PaperProps={{ sx: { width: 200 } }}
-          >
+          <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose} PaperProps={{ sx: { width: 220 } }}>
             <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                 {user?.name || 'User'}
               </Typography>
               <Typography variant="caption" color="text.secondary">

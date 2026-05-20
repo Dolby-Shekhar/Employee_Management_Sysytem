@@ -25,13 +25,6 @@ import {
   CircularProgress,
   Rating,
   Alert,
-  Avatar,
-  Divider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  InputAdornment
 } from '@mui/material';
 import {
   People, PersonAdd,
@@ -39,7 +32,6 @@ import {
   EventNote,
   Assessment,
   AccountCircle,
-  Description
 } from '@mui/icons-material';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { DataGrid } from '@mui/x-data-grid';
@@ -56,27 +48,31 @@ const TabPanel = ({ children, value, index }) => (
 
 const StatsCard = ({ title, value, icon, color }) => (
   <Card sx={{
-    transition: 'all 0.3s ease',
+    transition: 'all 0.28s ease',
     '&:hover': {
-      transform: 'translateY(-4px)',
-      boxShadow: 6,
+      transform: 'translateY(-6px)',
+      boxShadow: 8,
     }
   }}>
     <CardContent>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Box>
-          <Typography color="text.secondary" variant="body2">{title}</Typography>
-          <Typography variant="h4" sx={{ fontWeight: 700, mt: 1 }}>{value}</Typography>
+          <Typography color="text.secondary" variant="body2" sx={{ fontSize: 13 }}>{title}</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 800, mt: 1 }}>{value}</Typography>
         </Box>
         <Box sx={{
-          color: '#fff',
-          bgcolor: color === 'primary' ? '#1976d2' : color === 'warning' ? '#ed6c02' : color === 'success' ? '#2e7d32' : '#0288d1',
-          p: 1.5,
+          width: 56,
+          height: 56,
           borderRadius: 2,
-          background: color === 'primary' ? 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)' :
-                     color === 'warning' ? 'linear-gradient(135deg, #ed6c02 0%, #ff9800 100%)' :
-                     color === 'success' ? 'linear-gradient(135deg, #2e7d32 0%, #4caf50 100%)' :
-                     'linear-gradient(135deg, #0288d1 0%, #03a9f4 100%)'
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          boxShadow: '0 6px 18px rgba(15,23,42,0.08)',
+          background: color === 'primary' ? 'linear-gradient(135deg,#4f46e5 0%,#60a5fa 100%)' :
+                      color === 'warning' ? 'linear-gradient(135deg,#f97316 0%,#fb923c 100%)' :
+                      color === 'success' ? 'linear-gradient(135deg,#16a34a 0%,#4ade80 100%)' :
+                      'linear-gradient(135deg,#0288d1 0%,#03a9f4 100%)'
         }}>
           {icon}
         </Box>

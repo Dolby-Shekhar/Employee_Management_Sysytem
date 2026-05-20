@@ -29,7 +29,7 @@ import { AuthContext } from '../context/AuthContext';
 
 const drawerWidth = 260;
 
-const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
+const Sidebar = ({ mobileOpen, onDrawerToggle }) => {
   const { user, logout, isAdmin, isManager, isEmployee } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
@@ -79,14 +79,14 @@ const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Toolbar sx={{ px: 2, py: 2 }}>
+      <Toolbar sx={{ px: 3, py: 3, background: 'linear-gradient(180deg, rgba(79,70,229,0.12), transparent)' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Avatar sx={{ bgcolor: 'primary.main', width: 40, height: 40 }}>
+          <Avatar sx={{ bgcolor: 'primary.main', width: 44, height: 44, fontWeight: 700 }}>
             EMS
           </Avatar>
           <Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem', lineHeight: 1.2 }}>
-              EMS
+            <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1.2 }}>
+              EMS Portal
             </Typography>
             <Typography variant="caption" sx={{ color: 'text.secondary', textTransform: 'capitalize' }}>
               {user?.role || 'User'}
@@ -111,7 +111,8 @@ const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
                   }}
                   sx={{
                     mx: 1,
-                    borderRadius: 1,
+                    my: 0.5,
+                    borderRadius: 2,
                     '&.Mui-selected': {
                       bgcolor: 'primary.main',
                       color: 'primary.contrastText',
@@ -137,12 +138,12 @@ const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
 
       <Divider />
 
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 3, background: 'rgba(79,70,229,0.04)' }}>
         <ListItem disablePadding>
           <ListItemButton
             onClick={handleLogout}
             sx={{
-              borderRadius: 1,
+              borderRadius: 2,
               color: 'error.main',
               '&:hover': {
                 bgcolor: 'error.light',
@@ -157,7 +158,7 @@ const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
           </ListItemButton>
         </ListItem>
       </Box>
-    </Box> // ✅ properly closed
+    </Box>
   );
 
   return (
@@ -169,7 +170,7 @@ const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
         ModalProps={{ keepMounted: true }}
         sx={{
           display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, background: 'linear-gradient(180deg, #111827 0%, #0b1220 100%)' },
         }}
       >
         {drawerContent}
@@ -179,7 +180,7 @@ const Sidebar = ({ mobileOpen, onDrawerToggle, onNavigate }) => {
         open
         sx={{
           display: { xs: 'none', sm: 'block' },
-          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth, background: 'linear-gradient(180deg, #111827 0%, #0b1220 100%)' },
         }}
       >
         {drawerContent}
