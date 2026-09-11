@@ -1,4 +1,5 @@
 import express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import http from 'http';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -31,7 +32,7 @@ requiredEnv.forEach((key) => {
 
 const app = express();
 export default app;
-const port = Number(process.env.PORT || 5000);
+const port = parseInt(process.env.PORT || '5000', 10);
 
 app.set('trust proxy', 1);
 
@@ -69,12 +70,12 @@ const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 20, standardHeade
 const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, standardHeaders: true, legacyHeaders: false });
 app.use(globalLimiter);
 
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ success: true, message: 'EMS API is running' });
 });
 
 // Simple health‑check for Render
-app.get('/health', (_req, res) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
@@ -88,12 +89,12 @@ app.use('/api/v1/reports', reportRoutes);
 app.use('/api/v1/profile', profileRoutes);
 
 // Catch‑all for SPA (must be after API routes)
-app.get('*', (req, res) => {
+app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.resolve(__dirname, '..', 'public', 'index.html'));
 });
 
 // Global error handler
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Unhandled error:', err);
   const status = err.status || 500;
   const message = err.message || 'Internal Server Error';

@@ -153,7 +153,7 @@ const Layout = () => {
                     isActive
                       ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-sm'
                       : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-                  }`
+                  }`}`
                 }
               >
                 <span className="text-sm">{item.icon}</span>

@@ -1,5 +1,3 @@
-// Declarations for modules without @types in the build environment
-declare module 'express';
-declare module 'bcryptjs';
-declare module 'jsonwebtoken';
-declare module 'multer';
+// NOTE: bare `declare module '...';` shams previously shadowed the real typings
+// from @types/express, @types/bcryptjs, @types/jsonwebtoken and @types/multer,
+// which are all installed. Do not re-add them.

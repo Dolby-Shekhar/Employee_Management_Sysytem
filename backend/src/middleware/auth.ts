@@ -2,16 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthUser, JwtPayload } from '../types/common';
 
-export interface AuthRequest extends Request {
-  user?: AuthUser;
-  query?: any;
-  body?: any;
-  params?: any;
-  headers?: any;
-}
+// AuthRequest is Request (augmented globally with `user` via src/types/express.d.ts).
+export type AuthRequest = Request;
 
-export const protect = (req: AuthRequest, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers.authorization;
+export const protect = (req: Request, res: Response, next: NextFunction): void => {
+  const authHeader = (req.headers as any).authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     res.status(401).json({ success: false, message: 'Not authorized' });
     return;
@@ -28,7 +23,7 @@ export const protect = (req: AuthRequest, res: Response, next: NextFunction): vo
 };
 
 export const authorize = (...roles: Array<'admin' | 'manager' | 'employee'>) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({ success: false, message: 'Not authorized' });
       return;
