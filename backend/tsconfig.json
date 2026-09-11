@@ -11,9 +11,8 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true,
     "typeRoots": ["./node_modules/@types"],
-    "types": ["node", "express", "bcryptjs", "jsonwebtoken", "multer"],
+    "resolveJsonModule": true,
     "noImplicitAny": true,
     "sourceMap": true,
     "declaration": false
