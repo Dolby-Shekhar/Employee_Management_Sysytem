@@ -89,8 +89,13 @@ app.use('/api/v1/reports', reportRoutes);
 app.use('/api/v1/profile', profileRoutes);
 
 // Catch‑all for SPA (must be after API routes)
+const indexHtml = path.resolve(__dirname, '..', 'public', 'index.html');
 app.get('*', (req: Request, res: Response) => {
-  res.sendFile(path.resolve(__dirname, '..', 'public', 'index.html'));
+  if (fs.existsSync(indexHtml)) {
+    res.sendFile(indexHtml);
+  } else {
+    res.status(404).json({ success: false, message: 'Frontend build not found. API is running.' });
+  }
 });
 
 // Global error handler
