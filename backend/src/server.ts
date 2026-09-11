@@ -93,7 +93,7 @@ app.get('*', (req, res) => {
 });
 
 // Global error handler
-app.use((err: any, _req, res, _next) => {
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error('Unhandled error:', err);
   const status = err.status || 500;
   const message = err.message || 'Internal Server Error';
