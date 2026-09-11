@@ -4,7 +4,17 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const connectDB = async (): Promise<void> => {
-  const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/ems-ts';
+  // Accept either MONGODB_URI or MONGO_URI; fail fast with a clear message if neither is set.
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  if (!mongoUri) {
+    console.error(
+      'Missing MONGODB_URI environment variable.\n' +
+      'Set it in the Render dashboard (Environment) to your MongoDB Atlas connection string,\n' +
+      'e.g. mongodb+srv://<user>:<password>@<cluster>.mongodb.net/employee_management'
+    );
+    process.exit(1);
+  }
+  console.log(`Connecting to MongoDB at host: ${new URL(mongoUri.replace(/^mongodb\+srv:/, 'mongodb://')).host}`);
   await mongoose.connect(mongoUri);
 };
 
