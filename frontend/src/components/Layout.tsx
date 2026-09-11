@@ -78,7 +78,7 @@ const Layout = () => {
         <button
           type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="rounded-lg border border-slate-700 bg-slate-800 p-2 text-slate-300 hover:text-white"
+          className="rounded-lg border border-slate-700 bg-slate-800 p-2 text-slate-300 hover:text-white transition transform duration-200 hover:scale-105"
         >
           {mobileMenuOpen ? '✕' : '☰'}
         </button>
@@ -121,7 +121,7 @@ const Layout = () => {
             <button
               type="button"
               onClick={handleOpenProfile}
-              className="w-full text-left mb-5 rounded-2xl border border-slate-800 bg-slate-950/70 p-3 transition hover:border-cyan-500/50 hover:bg-slate-950 group"
+              className="w-full text-left mb-5 rounded-2xl border border-slate-800 bg-slate-950/70 p-3 transition transform duration-200 hover:scale-105 hover:border-cyan-500/50 hover:bg-slate-950 group"
             >
               <div className="flex items-center gap-2.5">
                 <div className="h-9 w-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 font-bold flex items-center justify-center text-xs group-hover:bg-cyan-500 group-hover:text-slate-950 transition">
@@ -149,7 +149,7 @@ const Layout = () => {
                 end={item.to === '/'}
                 onClick={() => setMobileMenuOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold tracking-wide transition ${
+                  `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-xs font-semibold tracking-wide transition transform duration-200 hover:scale-105 ${`
                     isActive
                       ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 shadow-sm'
                       : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
@@ -181,7 +181,7 @@ const Layout = () => {
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-6 w-full rounded-xl border border-slate-800 bg-slate-950/40 px-3.5 py-2 text-xs font-semibold text-slate-400 transition hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300"
+            className="mt-6 w-full rounded-xl border border-slate-800 bg-slate-950/40 px-3.5 py-2 text-xs font-semibold text-slate-400 transition transform duration-200 hover:scale-105 hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300"
           >
             Sign Out
           </button>
@@ -280,13 +280,13 @@ const Layout = () => {
                   <button
                     type="button"
                     onClick={() => setShowProfileModal(false)}
-                    className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800"
+                    className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 transform duration-200 hover:scale-105"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400 shadow-md shadow-cyan-500/20"
+                    className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-cyan-400 shadow-md shadow-cyan-500/20 transform duration-200 hover:scale-105"
                   >
                     Save Changes
                   </button>

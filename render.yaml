@@ -3,10 +3,11 @@ services:
     name: employee-management
     env: node
     plan: free
-    branch: main
+    branch: Updated
     root: backend
     buildCommand: npm install && npm run build
     startCommand: npm start
+  healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: NODE_ENV
