@@ -4,6 +4,10 @@ import { AuthUser, JwtPayload } from '../types/common';
 
 export interface AuthRequest extends Request {
   user?: AuthUser;
+  query?: any;
+  body?: any;
+  params?: any;
+  headers?: any;
 }
 
 export const protect = (req: AuthRequest, res: Response, next: NextFunction): void => {
