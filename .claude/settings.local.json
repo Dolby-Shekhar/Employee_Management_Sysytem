@@ -1,8 +1,0 @@
-{
-    "permissions": {
-    "allow": [
-      "Bash(ls -la *.js controllers/*.js models/*.js routes/*.js middleware/*.js config/*.js)",
-      "Bash(npm install leaflet react-leaflet)"
-    ]
-  }
-}
